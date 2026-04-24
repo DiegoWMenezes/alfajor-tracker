@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	firebase "firebase.google.com/go/v4"
 	"cloud.google.com/go/firestore"
@@ -24,7 +25,9 @@ func initFirebase() *firestore.Client {
 	if saFile != "" {
 		data, err := os.ReadFile(saFile)
 		if err != nil {
-			log.Fatalf("Erro ao ler arquivo %s: %v", saFile, err)
+			log.Printf("ERRO: Falha ao ler arquivo %s: %v", saFile, err)
+			log.Println("AVISO: Usando modo demo (dados em memoria)")
+			return nil
 		}
 		saJSON = string(data)
 	}
@@ -38,30 +41,43 @@ func initFirebase() *firestore.Client {
 		return nil
 	}
 
+	// Limpa quebras de linha escapadas que env vars podem ter
+	saJSON = strings.ReplaceAll(saJSON, "\\n", "\n")
+
 	var sa map[string]interface{}
 	if err := json.Unmarshal([]byte(saJSON), &sa); err != nil {
-		log.Fatalf("Erro ao parsear credenciais: %v", err)
+		log.Printf("ERRO: Falha ao parsear credenciais Firebase: %v", err)
+		log.Println("AVISO: Usando modo demo (dados em memoria)")
+		return nil
 	}
 
 	projectID, ok := sa["project_id"].(string)
 	if !ok {
-		log.Fatal("project_id nao encontrado no service account")
+		log.Println("ERRO: project_id nao encontrado no service account")
+		log.Println("AVISO: Usando modo demo (dados em memoria)")
+		return nil
 	}
 
 	creds, err := json.Marshal(sa)
 	if err != nil {
-		log.Fatalf("Erro ao criar credenciais: %v", err)
+		log.Printf("ERRO: Falha ao criar credenciais: %v", err)
+		log.Println("AVISO: Usando modo demo (dados em memoria)")
+		return nil
 	}
 
 	opt := option.WithCredentialsJSON(creds)
 	app, err := firebase.NewApp(ctx, &firebase.Config{ProjectID: projectID}, opt)
 	if err != nil {
-		log.Fatalf("Erro ao inicializar Firebase: %v", err)
+		log.Printf("ERRO: Falha ao inicializar Firebase: %v", err)
+		log.Println("AVISO: Usando modo demo (dados em memoria)")
+		return nil
 	}
 
 	client, err := app.Firestore(ctx)
 	if err != nil {
-		log.Fatalf("Erro ao criar Firestore client: %v", err)
+		log.Printf("ERRO: Falha ao criar Firestore client: %v", err)
+		log.Println("AVISO: Usando modo demo (dados em memoria)")
+		return nil
 	}
 
 	fmt.Println("Firebase Firestore conectado")
