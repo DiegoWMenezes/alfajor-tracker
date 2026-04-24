@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Alfajor</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧁</text></svg>">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-icon">🧁</div>
+      <h1>Alfajor</h1>
+      <p>Escolha seus sabores e faca seu pedido</p>
+    </div>
+
+    <!-- Formulario de pedido -->
+    <div id="order-form">
+      <div class="card">
+        <div class="input-group">
+          <label for="name">Seu nome</label>
+          <input type="text" id="name" placeholder="Digite seu nome..." autocomplete="given-name">
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Sabores</h2>
+        <div class="product-list" id="product-list">
+          <div class="loading">Carregando sabores...</div>
+        </div>
+      </div>
+
+      <div class="card" id="summary-card" style="display:none">
+        <h2>Resumo</h2>
+        <div id="summary-items"></div>
+        <div class="summary">
+          <div class="summary-row total">
+            <span>Total</span>
+            <span id="summary-total">R$ 0,00</span>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="submit-btn" disabled>Confirmar Pedido</button>
+      </div>
+    </div>
+
+    <!-- Tela de sucesso -->
+    <div id="success-screen" class="success-screen" style="display:none">
+      <div class="success-icon">&#10003;</div>
+      <h2>Pedido confirmado!</h2>
+      <p id="success-name"></p>
+      <div id="success-items" class="card"></div>
+      <p id="success-total" style="font-weight:800;font-size:22px;color:var(--primary-dark);margin:16px 0"></p>
+      <button class="btn btn-outline" onclick="newOrder()">Novo Pedido</button>
+    </div>
+  </div>
+
+  <script src="/static/js/customer.js"></script>
+</body>
+</html>

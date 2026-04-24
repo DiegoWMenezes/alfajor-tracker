@@ -1,0 +1,20 @@
+# Binario
+alfajor-tracker
+*.exe
+
+# Ambiente
+.env
+service-account.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Go
+go.work
+
+# OS
+.DS_Store
+Thumbs.db
