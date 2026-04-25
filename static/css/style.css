@@ -275,6 +275,27 @@ body {
   transform: translateY(-1px);
 }
 
+.btn-success {
+  background: linear-gradient(135deg, var(--success), #2e7d32);
+  color: white;
+  box-shadow: 0 4px 12px rgba(129, 199, 132, 0.3);
+}
+
+.btn-success:hover {
+  transform: translateY(-1px);
+}
+
+.btn-danger-outline {
+  background: transparent;
+  border: 2px solid var(--danger);
+  color: var(--danger);
+}
+
+.btn-danger-outline:hover {
+  background: var(--danger);
+  color: white;
+}
+
 .btn-outline {
   background: transparent;
   border: 2px solid var(--primary);
@@ -434,6 +455,35 @@ body {
   font-size: 13px;
 }
 
+.order-item-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg);
+  padding: 3px 10px;
+  border-radius: 8px;
+  margin: 2px 4px 2px 0;
+  font-size: 13px;
+}
+
+.item-remove-btn {
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.item-remove-btn:hover {
+  background: var(--danger-light);
+  color: #c62828;
+}
+
 .order-footer {
   display: flex;
   justify-content: space-between;
@@ -446,6 +496,12 @@ body {
   font-weight: 800;
   font-size: 18px;
   color: var(--primary-dark);
+}
+
+.order-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
 }
 
 .badge {

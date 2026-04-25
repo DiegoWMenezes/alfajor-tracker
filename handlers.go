@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -74,6 +75,7 @@ func handleGetProducts(w http.ResponseWriter, r *http.Request) {
 	for _, doc := range docs {
 		var p Product
 		if err := doc.DataTo(&p); err != nil {
+			log.Printf("ERRO: Falha ao deserializar produto %s: %v", doc.Ref.ID, err)
 			continue
 		}
 		p.ID = doc.Ref.ID
@@ -248,6 +250,7 @@ func handleGetOrders(w http.ResponseWriter, r *http.Request) {
 	for _, doc := range docs {
 		var o Order
 		if err := doc.DataTo(&o); err != nil {
+			log.Printf("ERRO: Falha ao deserializar pedido %s: %v", doc.Ref.ID, err)
 			continue
 		}
 		o.ID = doc.Ref.ID
@@ -290,6 +293,104 @@ func handleMarkPaid(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
 
+func handleDeleteOrder(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "ID obrigatorio", http.StatusBadRequest)
+		return
+	}
+
+	if fsClient == nil {
+		if !memStore.DeleteOrder(id) {
+			http.Error(w, "Pedido nao encontrado", http.StatusNotFound)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	_, err := fsClient.Collection("orders").Doc(id).Delete(ctx)
+	if err != nil {
+		http.Error(w, "Erro ao excluir pedido", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func handleRemoveOrderItem(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "ID obrigatorio", http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		ProductName string `json:"product_name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.ProductName == "" {
+		http.Error(w, "product_name obrigatorio", http.StatusBadRequest)
+		return
+	}
+
+	if fsClient == nil {
+		order, ok := memStore.RemoveOrderItem(id, req.ProductName)
+		if !ok {
+			http.Error(w, "Pedido nao encontrado ou item nao existe", http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(order)
+		return
+	}
+
+	doc, err := fsClient.Collection("orders").Doc(id).Get(ctx)
+	if err != nil {
+		http.Error(w, "Pedido nao encontrado", http.StatusNotFound)
+		return
+	}
+
+	var order Order
+	if err := doc.DataTo(&order); err != nil {
+		log.Printf("ERRO: Falha ao deserializar pedido %s: %v", id, err)
+		http.Error(w, "Erro ao ler pedido", http.StatusInternalServerError)
+		return
+	}
+	order.ID = doc.Ref.ID
+
+	filtered := make([]OrderItem, 0, len(order.Items))
+	for _, item := range order.Items {
+		if item.ProductName != req.ProductName {
+			filtered = append(filtered, item)
+		}
+	}
+
+	if len(filtered) == 0 {
+		fsClient.Collection("orders").Doc(id).Delete(ctx)
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	total := 0
+	for _, item := range filtered {
+		total += item.UnitPriceCents * item.Quantity
+	}
+
+	_, err = fsClient.Collection("orders").Doc(id).Update(ctx, []firestore.Update{
+		{Path: "Items", Value: filtered},
+		{Path: "TotalCents", Value: total},
+	})
+	if err != nil {
+		http.Error(w, "Erro ao atualizar pedido", http.StatusInternalServerError)
+		return
+	}
+
+	order.Items = filtered
+	order.TotalCents = total
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(order)
+}
+
 func handleSummary(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -309,6 +410,7 @@ func handleSummary(w http.ResponseWriter, r *http.Request) {
 	for _, doc := range docs {
 		var o Order
 		if err := doc.DataTo(&o); err != nil {
+			log.Printf("ERRO: Falha ao deserializar pedido no resumo %s: %v", doc.Ref.ID, err)
 			continue
 		}
 		s.TotalOrders++

@@ -5,6 +5,7 @@ alfajor-tracker
 # Ambiente
 .env
 service-account.json
+service-account-oneline.txt
 
 # IDE
 .idea/

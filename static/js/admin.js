@@ -93,7 +93,7 @@ async function loadOrders() {
       card.id = `order-${o.id}`;
 
       const itemsHtml = o.items.map(i =>
-        `<span>${i.product_name} x${i.quantity}</span>`
+        `<span class="order-item-tag">${i.product_name} x${i.quantity}<button class="item-remove-btn" onclick="removeItem('${o.id}', '${escapeAttr(i.product_name)}', '${escapeAttr(o.customer_name)}')">×</button></span>`
       ).join('');
 
       const time = new Date(o.created_at).toLocaleString('pt-BR');
@@ -106,10 +106,13 @@ async function loadOrders() {
         <div class="order-items">${itemsHtml}</div>
         <div class="order-footer">
           <span class="order-total">R$ ${formatCents(o.total_cents)}</span>
-          ${o.paid
-            ? '<span class="badge badge-paid">Pago</span>'
-            : `<button class="btn btn-sm btn-danger" onclick="markPaid('${o.id}')">Marcar Pago</button>`
-          }
+          <div class="order-actions">
+            ${o.paid
+              ? '<span class="badge badge-paid">Pago</span>'
+              : `<button class="btn btn-sm btn-success" onclick="markPaid('${o.id}')">Marcar Pago</button>`
+            }
+            <button class="btn btn-sm btn-danger-outline" onclick="deleteOrder('${o.id}', '${escapeAttr(o.customer_name)}')">Excluir</button>
+          </div>
         </div>
       `;
       list.appendChild(card);
@@ -128,6 +131,40 @@ async function markPaid(id) {
     }
   } catch (e) {
     alert('Erro ao marcar como pago');
+  }
+}
+
+async function deleteOrder(id, name) {
+  if (!confirm(`Excluir pedido de ${name} inteiramente?`)) return;
+  try {
+    const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      loadOrders();
+      loadSummary();
+    } else {
+      alert('Erro ao excluir pedido');
+    }
+  } catch (e) {
+    alert('Erro ao conectar');
+  }
+}
+
+async function removeItem(orderId, productName, customerName) {
+  if (!confirm(`Remover ${productName} do pedido de ${customerName}?`)) return;
+  try {
+    const res = await fetch(`/api/orders/${orderId}/items`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product_name: productName })
+    });
+    if (res.ok || res.status === 204) {
+      loadOrders();
+      loadSummary();
+    } else {
+      alert('Erro ao remover item');
+    }
+  } catch (e) {
+    alert('Erro ao conectar');
   }
 }
 
@@ -235,6 +272,10 @@ function switchTab(tab) {
 
 function formatCents(cents) {
   return (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+}
+
+function escapeAttr(str) {
+  return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
 }
 
 // --- Init ---

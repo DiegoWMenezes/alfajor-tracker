@@ -22,8 +22,11 @@ func main() {
 	fsClient = initFirebase()
 	if fsClient != nil {
 		seedProducts(fsClient)
+		fmt.Println("Modo: Firebase Firestore (dados persistentes)")
 	} else {
 		initMemStore()
+		fmt.Println("MODO DEMO: dados em memoria — pedidos serao perdidos ao reiniciar!")
+		fmt.Println("Para persistencia, configure FIREBASE_SERVICE_ACCOUNT")
 	}
 
 	// Serve arquivos estaticos
@@ -55,6 +58,8 @@ func main() {
 	mux.HandleFunc("POST /api/orders", handleCreateOrder)
 	mux.HandleFunc("GET /api/orders", requireAuth(handleGetOrders))
 	mux.HandleFunc("PATCH /api/orders/{id}/pay", requireAuth(handleMarkPaid))
+	mux.HandleFunc("DELETE /api/orders/{id}", requireAuth(handleDeleteOrder))
+	mux.HandleFunc("PATCH /api/orders/{id}/items", requireAuth(handleRemoveOrderItem))
 
 	// Summary
 	mux.HandleFunc("GET /api/summary", requireAuth(handleSummary))

@@ -118,6 +118,45 @@ func (m *MemStore) MarkPaid(id string) bool {
 	return false
 }
 
+func (m *MemStore) DeleteOrder(id string) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for i, o := range m.orders {
+		if o.ID == id {
+			m.orders = append(m.orders[:i], m.orders[i+1:]...)
+			return true
+		}
+	}
+	return false
+}
+
+func (m *MemStore) RemoveOrderItem(id string, productName string) (Order, bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for i, o := range m.orders {
+		if o.ID == id {
+			filtered := make([]OrderItem, 0, len(o.Items))
+			for _, item := range o.Items {
+				if item.ProductName != productName {
+					filtered = append(filtered, item)
+				}
+			}
+			if len(filtered) == 0 {
+				m.orders = append(m.orders[:i], m.orders[i+1:]...)
+				return Order{}, false
+			}
+			total := 0
+			for _, item := range filtered {
+				total += item.UnitPriceCents * item.Quantity
+			}
+			m.orders[i].Items = filtered
+			m.orders[i].TotalCents = total
+			return m.orders[i], true
+		}
+	}
+	return Order{}, false
+}
+
 func (m *MemStore) GetSummary() Summary {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
