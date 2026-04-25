@@ -5,12 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Alfajor</title>
   <link rel="stylesheet" href="/static/css/style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧁</text></svg>">
+  <link rel="icon" href="/static/img/logo.png">
 </head>
 <body>
-  <div class="container">
+  <div id="loading-screen" class="loading-screen">
+    <img src="/static/img/logo.png" alt="Alfajor" class="loading-logo">
+    <div class="loading-spinner"></div>
+    <p>Carregando...</p>
+  </div>
+
+  <div class="container" id="app-content" style="opacity:0">
     <div class="header">
-      <div class="header-icon">🧁</div>
+      <img src="/static/img/logo.png" alt="Alfajor" class="header-logo">
       <h1>Alfajor</h1>
       <p>Escolha seus sabores e faca seu pedido</p>
     </div>
@@ -56,5 +62,14 @@
   </div>
 
   <script src="/static/js/customer.js"></script>
+  <script>
+    window.addEventListener('load', function() {
+      var loading = document.getElementById('loading-screen');
+      var content = document.getElementById('app-content');
+      content.style.opacity = '1';
+      loading.style.opacity = '0';
+      setTimeout(function() { loading.style.display = 'none'; }, 400);
+    });
+  </script>
 </body>
 </html>
