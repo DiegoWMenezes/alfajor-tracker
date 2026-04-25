@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -41,12 +42,14 @@ func initFirebase() *firestore.Client {
 		return nil
 	}
 
-	// Render e outras plataformas convertem \n em newlines reais no valor da env var,
-	// quebrando o parse do JSON. Convertemos de volta para a sequencia de escape \n.
-	// Isso preserva as quebras de linha dentro da private_key (necessarias pro Firebase)
-	// e mantem o JSON valido.
+	// Tenta decodificar base64 primeiro (evita problemas de escape em plataformas como Render)
+	if decoded, err := base64.StdEncoding.DecodeString(saJSON); err == nil {
+		saJSON = string(decoded)
+	}
+
+	// Remove quebras de linha reais que plataformas podem inserir no valor da env var
 	saJSON = strings.ReplaceAll(saJSON, "\r", "")
-	saJSON = strings.ReplaceAll(saJSON, "\n", "\\n")
+	saJSON = strings.ReplaceAll(saJSON, "\n", "")
 
 	var sa map[string]interface{}
 	if err := json.Unmarshal([]byte(saJSON), &sa); err != nil {
