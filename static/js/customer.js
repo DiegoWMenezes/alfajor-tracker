@@ -34,6 +34,8 @@ async function loadProducts() {
   } catch (e) {
     list.innerHTML = '<div class="empty-state"><p>Erro ao carregar sabores</p></div>';
   }
+
+  if (typeof hideLoading === 'function') hideLoading();
 }
 
 function changeQty(id, delta) {

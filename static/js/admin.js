@@ -49,6 +49,8 @@ function showAdmin() {
   loadSummary();
   loadOrders();
   loadProductsAdmin();
+  checkDemoMode();
+  if (typeof hideLoading === 'function') hideLoading();
 }
 
 // --- Summary ---
@@ -270,6 +272,18 @@ function switchTab(tab) {
 
 // --- Utils ---
 
+async function checkDemoMode() {
+  try {
+    const res = await fetch('/api/status');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.demo) {
+        document.getElementById('demo-warning').style.display = 'block';
+      }
+    }
+  } catch (e) {}
+}
+
 function formatCents(cents) {
   return (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 }
@@ -290,5 +304,9 @@ fetch('/api/summary').then(res => {
   if (res.ok) {
     isLoggedIn = true;
     showAdmin();
+  } else {
+    if (typeof hideLoading === 'function') hideLoading();
   }
-}).catch(() => {});
+}).catch(() => {
+  if (typeof hideLoading === 'function') hideLoading();
+});

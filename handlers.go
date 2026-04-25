@@ -424,6 +424,13 @@ func handleSummary(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(s)
 }
 
+func handleStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]bool{
+		"demo": fsClient == nil,
+	})
+}
+
 // --- Helpers ---
 
 func getProductPrice(productName string) (int, error) {

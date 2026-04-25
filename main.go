@@ -64,6 +64,9 @@ func main() {
 	// Summary
 	mux.HandleFunc("GET /api/summary", requireAuth(handleSummary))
 
+	// Status
+	mux.HandleFunc("GET /api/status", handleStatus)
+
 	fmt.Printf("Servidor rodando em http://localhost:%s\n", port)
 	fmt.Println("Senha padrao (demo): admin")
 	log.Fatal(http.ListenAndServe(":"+port, mux))

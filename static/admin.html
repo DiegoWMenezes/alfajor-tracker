@@ -36,6 +36,9 @@
 
     <!-- Painel admin -->
     <div id="admin-panel" style="display:none">
+      <div id="demo-warning" class="demo-warning" style="display:none">
+        Modo demonstração — dados são perdidos ao reiniciar. Configure FIREBASE_SERVICE_ACCOUNT para persistência.
+      </div>
       <div class="admin-header">
         <h2>Alfajor</h2>
         <button class="btn btn-sm btn-outline" onclick="logout()">Sair</button>
@@ -97,13 +100,13 @@
 
   <script src="/static/js/admin.js"></script>
   <script>
-    window.addEventListener('load', function() {
+    function hideLoading() {
       var loading = document.getElementById('loading-screen');
       var content = document.getElementById('app-content');
       content.style.opacity = '1';
       loading.style.opacity = '0';
       setTimeout(function() { loading.style.display = 'none'; }, 400);
-    });
+    }
   </script>
 </body>
 </html>

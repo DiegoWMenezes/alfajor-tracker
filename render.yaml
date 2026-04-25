@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: alfajor-tracker
+    runtime: docker
+    plan: free
+    envVars:
+      - key: PORT
+        value: "8080"
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: false
+      - key: ADMIN_PASSWORD_HASH
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
