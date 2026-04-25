@@ -41,10 +41,12 @@ func initFirebase() *firestore.Client {
 		return nil
 	}
 
-	// Remove quebras de linha reais que plataformas como Render inserem no valor da env var
-	// Isso corrige o problema de \n ser convertido em newline real, quebrando o JSON
+	// Render e outras plataformas convertem \n em newlines reais no valor da env var,
+	// quebrando o parse do JSON. Convertemos de volta para a sequencia de escape \n.
+	// Isso preserva as quebras de linha dentro da private_key (necessarias pro Firebase)
+	// e mantem o JSON valido.
 	saJSON = strings.ReplaceAll(saJSON, "\r", "")
-	saJSON = strings.ReplaceAll(saJSON, "\n", "")
+	saJSON = strings.ReplaceAll(saJSON, "\n", "\\n")
 
 	var sa map[string]interface{}
 	if err := json.Unmarshal([]byte(saJSON), &sa); err != nil {
