@@ -89,9 +89,7 @@ func GeneratePixPayload(txid string, amountCents int) string {
 	// ID 63 - CRC16 (calculado por ultimo)
 	payloadStr := payload.String() + "6304"
 	crc := crc16CCITT(payloadStr)
-	payload.WriteString(fmt.Sprintf("63%04X", crc))
-
-	return payload.String()
+	return payloadStr + fmt.Sprintf("%04X", crc)
 }
 
 // emvField monta um campo no formato ID+Length+Value
