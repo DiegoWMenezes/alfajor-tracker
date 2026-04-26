@@ -57,6 +57,7 @@ func main() {
 	// Orders
 	mux.HandleFunc("POST /api/orders", handleCreateOrder)
 	mux.HandleFunc("GET /api/orders", requireAuth(handleGetOrders))
+	mux.HandleFunc("GET /api/orders/{id}/pix", handleGetPix)
 	mux.HandleFunc("PATCH /api/orders/{id}/pay", requireAuth(handleMarkPaid))
 	mux.HandleFunc("DELETE /api/orders/{id}", requireAuth(handleDeleteOrder))
 	mux.HandleFunc("PATCH /api/orders/{id}/items", requireAuth(handleRemoveOrderItem))

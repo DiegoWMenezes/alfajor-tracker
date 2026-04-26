@@ -424,6 +424,54 @@ func handleSummary(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(s)
 }
 
+func handleGetPix(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "ID obrigatorio", http.StatusBadRequest)
+		return
+	}
+
+	if !isPixConfigured() {
+		http.Error(w, "Pix nao configurado", http.StatusNotFound)
+		return
+	}
+
+	var totalCents int
+
+	if fsClient != nil {
+		doc, err := fsClient.Collection("orders").Doc(id).Get(ctx)
+		if err != nil {
+			http.Error(w, "Pedido nao encontrado", http.StatusNotFound)
+			return
+		}
+		var order Order
+		if err := doc.DataTo(&order); err != nil {
+			http.Error(w, "Erro ao ler pedido", http.StatusInternalServerError)
+			return
+		}
+		totalCents = order.TotalCents
+	} else {
+		order, ok := memStore.GetOrder(id)
+		if !ok {
+			http.Error(w, "Pedido nao encontrado", http.StatusNotFound)
+			return
+		}
+		totalCents = order.TotalCents
+	}
+
+	payload := GeneratePixPayload(id, totalCents)
+	if payload == "" {
+		http.Error(w, "Erro ao gerar Pix", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"pix":   payload,
+		"value": fmt.Sprintf("R$ %.2f", float64(totalCents)/100.0),
+	})
+}
+
 func handleStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]bool{

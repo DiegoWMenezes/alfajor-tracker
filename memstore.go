@@ -157,6 +157,17 @@ func (m *MemStore) RemoveOrderItem(id string, productName string) (Order, bool) 
 	return Order{}, false
 }
 
+func (m *MemStore) GetOrder(id string) (Order, bool) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	for _, o := range m.orders {
+		if o.ID == id {
+			return o, true
+		}
+	}
+	return Order{}, false
+}
+
 func (m *MemStore) GetSummary() Summary {
 	m.mu.RLock()
 	defer m.mu.RUnlock()

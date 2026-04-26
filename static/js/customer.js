@@ -115,7 +115,7 @@ async function submitOrder() {
     }
 
     const order = await res.json();
-    showSuccess(name, items);
+    showSuccess(name, items, order.id);
   } catch (e) {
     alert('Erro ao enviar pedido: ' + e.message);
     btn.disabled = false;
@@ -123,7 +123,7 @@ async function submitOrder() {
   }
 }
 
-function showSuccess(name, items) {
+function showSuccess(name, items, orderId) {
   document.getElementById('order-form').style.display = 'none';
   document.getElementById('success-screen').style.display = 'block';
   document.getElementById('success-name').textContent = `${name}, seu pedido foi anotado!`;
@@ -141,6 +141,29 @@ function showSuccess(name, items) {
   html += '</div>';
   document.getElementById('success-items').innerHTML = html;
   document.getElementById('success-total').textContent = `Total: R$ ${formatCents(total)}`;
+
+  // Busca Pix copia e cola
+  if (orderId) {
+    fetch(`/api/orders/${orderId}/pix`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data && data.pix) {
+          document.getElementById('pix-section').style.display = 'block';
+          document.getElementById('pix-value').textContent = data.value;
+          document.getElementById('pix-code').textContent = data.pix;
+        }
+      })
+      .catch(() => {});
+  }
+}
+
+function copyPix() {
+  const code = document.getElementById('pix-code').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.querySelector('.pix-copy-btn');
+    btn.textContent = 'Copiado!';
+    setTimeout(() => { btn.textContent = 'Copiar'; }, 2000);
+  });
 }
 
 function newOrder() {

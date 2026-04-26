@@ -57,6 +57,15 @@
       <p id="success-name"></p>
       <div id="success-items" class="card"></div>
       <p id="success-total" style="font-weight:800;font-size:22px;color:var(--primary-dark);margin:16px 0"></p>
+      <div id="pix-section" class="pix-section" style="display:none">
+        <h3>Pague via Pix</h3>
+        <p id="pix-value" class="pix-value"></p>
+        <div class="pix-copy-box">
+          <code id="pix-code"></code>
+          <button class="btn btn-sm btn-primary pix-copy-btn" onclick="copyPix()">Copiar</button>
+        </div>
+        <p class="pix-hint">Copie o codigo e cole no app do seu banco</p>
+      </div>
       <button class="btn btn-outline" onclick="newOrder()">Novo Pedido</button>
     </div>
   </div>
