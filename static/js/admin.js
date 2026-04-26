@@ -49,6 +49,7 @@ function showAdmin() {
   loadSummary();
   loadOrders();
   loadProductsAdmin();
+  loadAnalytics();
   checkDemoMode();
   if (typeof hideLoading === 'function') hideLoading();
 }
@@ -290,6 +291,205 @@ function formatCents(cents) {
 
 function escapeAttr(str) {
   return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+// --- Analytics ---
+
+let analyticsOrders = [];
+let analyticsCharts = {};
+
+async function loadAnalytics() {
+  try {
+    const res = await fetch('/api/orders');
+    if (!res.ok) throw new Error('Unauthorized');
+    analyticsOrders = await res.json();
+    renderAnalytics();
+  } catch (e) {
+    console.error('Erro ao carregar analytics:', e);
+  }
+}
+
+function renderAnalytics() {
+  const checkboxes = document.querySelectorAll('.metric-chip input');
+  const visible = {};
+  checkboxes.forEach(cb => {
+    visible[cb.value] = cb.checked;
+  });
+
+  const metrics = ['month', 'week', 'clients', 'flavors', 'paidstatus', 'timeline'];
+  metrics.forEach(m => {
+    const el = document.getElementById('metric-' + m);
+    if (el) el.style.display = visible[m] ? 'block' : 'none';
+  });
+
+  if (analyticsOrders.length === 0) return;
+
+  if (visible.month) renderMonth();
+  if (visible.week) renderWeek();
+  if (visible.clients) renderClients();
+  if (visible.flavors) renderFlavors();
+  if (visible.paidstatus) renderPaidStatus();
+  if (visible.timeline) renderTimeline();
+}
+
+function destroyChart(id) {
+  if (analyticsCharts[id]) {
+    analyticsCharts[id].destroy();
+    analyticsCharts[id] = null;
+  }
+}
+
+function renderMonth() {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthOrders = analyticsOrders.filter(o => new Date(o.created_at) >= monthStart);
+  const total = monthOrders.reduce((s, o) => s + o.total_cents, 0);
+
+  document.getElementById('month-summary').innerHTML =
+    '<div class="metric-block"><div class="metric-value">' + formatCents(total) + '</div><div class="metric-label">Total do mes</div></div>' +
+    '<div class="metric-block"><div class="metric-value">' + monthOrders.length + '</div><div class="metric-label">Pedidos</div></div>';
+
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const dayData = {};
+  for (let i = 1; i <= daysInMonth; i++) dayData[i] = 0;
+  monthOrders.forEach(o => {
+    const d = new Date(o.created_at);
+    if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
+      dayData[d.getDate()] = (dayData[d.getDate()] || 0) + o.total_cents;
+    }
+  });
+
+  destroyChart('chart-month');
+  analyticsCharts['chart-month'] = new Chart(document.getElementById('chart-month'), {
+    type: 'bar',
+    data: {
+      labels: Object.keys(dayData),
+      datasets: [{ label: 'Vendas (R$)', data: Object.values(dayData).map(v => v / 100), backgroundColor: '#e8a0bf', borderRadius: 6 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
+  });
+}
+
+function renderWeek() {
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+  const weekOrders = analyticsOrders.filter(o => new Date(o.created_at) >= weekStart);
+  const total = weekOrders.reduce((s, o) => s + o.total_cents, 0);
+
+  document.getElementById('week-summary').innerHTML =
+    '<div class="metric-block"><div class="metric-value">' + formatCents(total) + '</div><div class="metric-label">Total da semana</div></div>' +
+    '<div class="metric-block"><div class="metric-value">' + weekOrders.length + '</div><div class="metric-label">Pedidos</div></div>';
+
+  const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+  const dayTotals = [0, 0, 0, 0, 0, 0, 0];
+  weekOrders.forEach(o => {
+    const d = new Date(o.created_at).getDay();
+    dayTotals[d] += o.total_cents;
+  });
+
+  destroyChart('chart-week');
+  analyticsCharts['chart-week'] = new Chart(document.getElementById('chart-week'), {
+    type: 'bar',
+    data: {
+      labels: days,
+      datasets: [{ label: 'Vendas (R$)', data: dayTotals.map(v => v / 100), backgroundColor: '#81c784', borderRadius: 6 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
+  });
+}
+
+function renderClients() {
+  const clients = {};
+  analyticsOrders.forEach(o => {
+    if (!clients[o.customer_name]) clients[o.customer_name] = { orders: 0, total: 0 };
+    clients[o.customer_name].orders++;
+    clients[o.customer_name].total += o.total_cents;
+  });
+  const sorted = Object.entries(clients).sort((a, b) => b[1].total - a[1].total).slice(0, 10);
+
+  let html = '<table class="clients-table"><thead><tr><th>Cliente</th><th>Pedidos</th><th>Total</th></tr></thead><tbody>';
+  sorted.forEach(([name, data]) => {
+    html += '<tr><td>' + name + '</td><td>' + data.orders + '</td><td>R$ ' + formatCents(data.total) + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('clients-table').innerHTML = html;
+}
+
+function renderFlavors() {
+  const flavors = {};
+  analyticsOrders.forEach(o => {
+    o.items.forEach(item => {
+      if (!flavors[item.product_name]) flavors[item.product_name] = { qty: 0, revenue: 0 };
+      flavors[item.product_name].qty += item.quantity;
+      flavors[item.product_name].revenue += item.unit_price_cents * item.quantity;
+    });
+  });
+  const labels = Object.keys(flavors);
+  const qtyData = labels.map(l => flavors[l].qty);
+  const revData = labels.map(l => flavors[l].revenue / 100);
+  const colors = ['#e8a0bf', '#c9789e', '#81c784', '#66bb6a', '#ef5350', '#e57373', '#ffb74d', '#ff9800', '#64b5f6', '#42a5f5'];
+
+  destroyChart('chart-flavors-qty');
+  analyticsCharts['chart-flavors-qty'] = new Chart(document.getElementById('chart-flavors-qty'), {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{ data: qtyData, backgroundColor: colors.slice(0, labels.length) }]
+    },
+    options: { responsive: true, plugins: { title: { display: true, text: 'Quantidade', font: { size: 14, weight: 'bold' } } } }
+  });
+
+  destroyChart('chart-flavors-revenue');
+  analyticsCharts['chart-flavors-revenue'] = new Chart(document.getElementById('chart-flavors-revenue'), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{ label: 'Receita (R$)', data: revData, backgroundColor: '#e8a0bf', borderRadius: 6 }]
+    },
+    options: { responsive: true, indexAxis: 'y', plugins: { legend: { display: false }, title: { display: true, text: 'Receita (R$)', font: { size: 14, weight: 'bold' } } }, scales: { x: { beginAtZero: true } } }
+  });
+}
+
+function renderPaidStatus() {
+  const paid = analyticsOrders.filter(o => o.paid).reduce((s, o) => s + o.total_cents, 0);
+  const pending = analyticsOrders.filter(o => !o.paid).reduce((s, o) => s + o.total_cents, 0);
+
+  document.getElementById('paid-summary').innerHTML =
+    '<div class="metric-block"><div class="metric-value" style="color:#81c784">' + formatCents(paid) + '</div><div class="metric-label">Recebido</div></div>' +
+    '<div class="metric-block"><div class="metric-value" style="color:#ef5350">' + formatCents(pending) + '</div><div class="metric-label">Pendente</div></div>';
+
+  destroyChart('chart-paid');
+  analyticsCharts['chart-paid'] = new Chart(document.getElementById('chart-paid'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Recebido', 'Pendente'],
+      datasets: [{ data: [paid / 100, pending / 100], backgroundColor: ['#81c784', '#ef5350'] }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+  });
+}
+
+function renderTimeline() {
+  const dayMap = {};
+  analyticsOrders.forEach(o => {
+    const d = new Date(o.created_at);
+    const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    dayMap[key] = (dayMap[key] || 0) + o.total_cents;
+  });
+  const sorted = Object.keys(dayMap).sort();
+  const values = sorted.map(k => dayMap[k] / 100);
+
+  destroyChart('chart-timeline');
+  analyticsCharts['chart-timeline'] = new Chart(document.getElementById('chart-timeline'), {
+    type: 'line',
+    data: {
+      labels: sorted,
+      datasets: [{ label: 'Vendas (R$)', data: values, borderColor: '#e8a0bf', backgroundColor: 'rgba(232,160,191,0.1)', fill: true, tension: 0.3, pointRadius: 3 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
+  });
 }
 
 // --- Init ---

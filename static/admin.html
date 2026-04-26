@@ -68,6 +68,7 @@
       <div class="tabs">
         <button class="tab active" data-tab="orders" onclick="switchTab('orders')">Pedidos</button>
         <button class="tab" data-tab="products" onclick="switchTab('products')">Sabores</button>
+        <button class="tab" data-tab="analytics" onclick="switchTab('analytics')">Analytics</button>
       </div>
 
       <!-- Pedidos -->
@@ -95,9 +96,61 @@
           <div id="products-list-admin"></div>
         </div>
       </div>
+
+      <!-- Analytics -->
+      <div id="tab-analytics" class="tab-content">
+        <div class="card">
+          <h2>Metrics</h2>
+          <div class="metric-chips">
+            <label class="metric-chip"><input type="checkbox" value="month" checked onchange="renderAnalytics()"><span>Vendas do mes</span></label>
+            <label class="metric-chip"><input type="checkbox" value="week" onchange="renderAnalytics()"><span>Vendas da semana</span></label>
+            <label class="metric-chip"><input type="checkbox" value="clients" onchange="renderAnalytics()"><span>Top clientes</span></label>
+            <label class="metric-chip"><input type="checkbox" value="flavors" onchange="renderAnalytics()"><span>Sabores</span></label>
+            <label class="metric-chip"><input type="checkbox" value="paidstatus" onchange="renderAnalytics()"><span>Recebido vs Pendente</span></label>
+            <label class="metric-chip"><input type="checkbox" value="timeline" onchange="renderAnalytics()"><span>Evolucao temporal</span></label>
+          </div>
+        </div>
+
+        <div id="metric-month" class="card chart-container">
+          <h2>Vendas do Mes</h2>
+          <div class="metric-summary" id="month-summary"></div>
+          <canvas id="chart-month"></canvas>
+        </div>
+
+        <div id="metric-week" class="card chart-container" style="display:none">
+          <h2>Vendas da Semana</h2>
+          <div class="metric-summary" id="week-summary"></div>
+          <canvas id="chart-week"></canvas>
+        </div>
+
+        <div id="metric-clients" class="card chart-container" style="display:none">
+          <h2>Top Clientes</h2>
+          <div id="clients-table"></div>
+        </div>
+
+        <div id="metric-flavors" class="card chart-container" style="display:none">
+          <h2>Sabores Mais Vendidos</h2>
+          <div class="chart-pair">
+            <div class="chart-pair-item"><canvas id="chart-flavors-qty"></canvas></div>
+            <div class="chart-pair-item"><canvas id="chart-flavors-revenue"></canvas></div>
+          </div>
+        </div>
+
+        <div id="metric-paidstatus" class="card chart-container" style="display:none">
+          <h2>Recebido vs Pendente</h2>
+          <div class="metric-summary" id="paid-summary"></div>
+          <canvas id="chart-paid"></canvas>
+        </div>
+
+        <div id="metric-timeline" class="card chart-container" style="display:none">
+          <h2>Evolucao Temporal</h2>
+          <canvas id="chart-timeline"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script src="/static/js/admin.js"></script>
   <script>
     function hideLoading() {
