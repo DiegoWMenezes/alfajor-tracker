@@ -49,6 +49,9 @@ func GeneratePixPayload(txid string, amountCents int) string {
 	// ID 00 - Payload Format Indicator
 	payload.WriteString(emvField("00", "01"))
 
+	// ID 01 - Point of Initiation Method (12 = com valor, 11 = sem valor)
+	payload.WriteString(emvField("01", "12"))
+
 	// ID 26 - Merchant Account Information (Pix)
 	var merchant strings.Builder
 	merchant.WriteString(emvField("00", "br.gov.bcb.pix")) // GUI
