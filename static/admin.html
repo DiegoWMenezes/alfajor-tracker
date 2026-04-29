@@ -78,7 +78,25 @@
           <button class="filter-btn" data-filter="false" onclick="filterOrders('false')">Pendentes</button>
           <button class="filter-btn" data-filter="true" onclick="filterOrders('true')">Pagos</button>
         </div>
+        <div class="client-filter-bar">
+          <select id="client-filter" onchange="filterByClient(this.value)">
+            <option value="">Todos os clientes</option>
+          </select>
+        </div>
         <div id="orders-list"></div>
+        <div id="client-summary" class="client-summary-card" style="display:none">
+          <div class="client-summary-title" id="client-summary-name"></div>
+          <div class="client-summary-stats">
+            <div class="client-summary-block">
+              <div class="client-summary-value" id="client-summary-pending" style="color:var(--danger)">-</div>
+              <div class="client-summary-label">Saldo Pendente</div>
+            </div>
+            <div class="client-summary-block">
+              <div class="client-summary-value" id="client-summary-paid" style="color:var(--success)">-</div>
+              <div class="client-summary-label">Valor Pago</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Sabores -->

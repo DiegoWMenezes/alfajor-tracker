@@ -1,5 +1,7 @@
 let currentFilter = 'all';
+let currentClient = '';
 let isLoggedIn = false;
+let allOrders = [];
 
 // --- Auth ---
 
@@ -74,62 +76,111 @@ async function loadSummary() {
 
 async function loadOrders() {
   const list = document.getElementById('orders-list');
-  let url = '/api/orders';
-  if (currentFilter !== 'all') {
-    url += `?paid=${currentFilter}`;
-  }
-
   try {
-    const res = await fetch(url);
+    const res = await fetch('/api/orders');
     if (!res.ok) throw new Error('Unauthorized');
-    const orders = await res.json();
-
-    if (orders.length === 0) {
-      list.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128203;</div><p>Nenhum pedido encontrado</p></div>';
-      return;
-    }
-
-    list.innerHTML = '';
-    orders.forEach(o => {
-      const card = document.createElement('div');
-      card.className = `order-card ${o.paid ? 'paid' : ''}`;
-      card.id = `order-${o.id}`;
-
-      const itemsHtml = o.items.map(i =>
-        `<span class="order-item-tag">${i.product_name} x${i.quantity}<button class="item-remove-btn" onclick="removeItem('${o.id}', '${escapeAttr(i.product_name)}', '${escapeAttr(o.customer_name)}')">×</button></span>`
-      ).join('');
-
-      const time = new Date(o.created_at).toLocaleString('pt-BR');
-
-      card.innerHTML = `
-        <div class="order-header">
-          <span class="order-name">${o.customer_name}</span>
-          <span class="order-time">${time}</span>
-        </div>
-        <div class="order-items">${itemsHtml}</div>
-        <div class="order-footer">
-          <span class="order-total">R$ ${formatCents(o.total_cents)}</span>
-          <div class="order-actions">
-            ${o.paid
-              ? '<span class="badge badge-paid">Pago</span>'
-              : `<button class="btn btn-sm btn-success" onclick="markPaid('${o.id}')">Marcar Pago</button>`
-            }
-            <button class="btn btn-sm btn-danger-outline" onclick="deleteOrder('${o.id}', '${escapeAttr(o.customer_name)}')">Excluir</button>
-          </div>
-        </div>
-      `;
-      list.appendChild(card);
-    });
+    allOrders = await res.json();
+    populateClientFilter();
+    renderFilteredOrders();
   } catch (e) {
     list.innerHTML = '<div class="empty-state"><p>Erro ao carregar pedidos</p></div>';
   }
+}
+
+function populateClientFilter() {
+  const select = document.getElementById('client-filter');
+  const clients = [...new Set(allOrders.map(o => o.customer_name))].sort();
+  const current = select.value;
+  select.innerHTML = '<option value="">Todos os clientes</option>';
+  clients.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    select.appendChild(opt);
+  });
+  select.value = current || '';
+}
+
+function filterByClient(name) {
+  currentClient = name;
+  renderFilteredOrders();
+}
+
+function renderFilteredOrders() {
+  const list = document.getElementById('orders-list');
+  let orders = allOrders.slice();
+
+  if (currentFilter !== 'all') {
+    const paidVal = currentFilter === 'true';
+    orders = orders.filter(o => o.paid === paidVal);
+  }
+
+  if (currentClient) {
+    orders = orders.filter(o => o.customer_name === currentClient);
+  }
+
+  // Atualizar resumo do cliente
+  updateClientSummary();
+
+  if (orders.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128203;</div><p>Nenhum pedido encontrado</p></div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  orders.forEach(o => {
+    const card = document.createElement('div');
+    card.className = `order-card ${o.paid ? 'paid' : ''}`;
+    card.id = `order-${o.id}`;
+
+    const itemsHtml = o.items.map(i =>
+      `<span class="order-item-tag">${i.product_name} x${i.quantity}<button class="item-remove-btn" onclick="removeItem('${o.id}', '${escapeAttr(i.product_name)}', '${escapeAttr(o.customer_name)}')">×</button></span>`
+    ).join('');
+
+    const time = new Date(o.created_at).toLocaleString('pt-BR');
+
+    card.innerHTML = `
+      <div class="order-header">
+        <span class="order-name">${o.customer_name}</span>
+        <span class="order-time">${time}</span>
+      </div>
+      <div class="order-items">${itemsHtml}</div>
+      <div class="order-footer">
+        <span class="order-total">R$ ${formatCents(o.total_cents)}</span>
+        <div class="order-actions">
+          ${o.paid
+            ? '<span class="badge badge-paid">Pago</span>'
+            : `<button class="btn btn-sm btn-success" onclick="markPaid('${o.id}')">Marcar Pago</button>`
+          }
+          <button class="btn btn-sm btn-danger-outline" onclick="deleteOrder('${o.id}', '${escapeAttr(o.customer_name)}')">Excluir</button>
+        </div>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function updateClientSummary() {
+  const summaryEl = document.getElementById('client-summary');
+  if (!currentClient) {
+    summaryEl.style.display = 'none';
+    return;
+  }
+  const clientOrders = allOrders.filter(o => o.customer_name === currentClient);
+  const pendingCents = clientOrders.filter(o => !o.paid).reduce((s, o) => s + o.total_cents, 0);
+  const paidCents = clientOrders.filter(o => o.paid).reduce((s, o) => s + o.total_cents, 0);
+
+  document.getElementById('client-summary-name').textContent = currentClient;
+  document.getElementById('client-summary-pending').textContent = `R$ ${formatCents(pendingCents)}`;
+  document.getElementById('client-summary-paid').textContent = `R$ ${formatCents(paidCents)}`;
+  summaryEl.style.display = 'block';
 }
 
 async function markPaid(id) {
   try {
     const res = await fetch(`/api/orders/${id}/pay`, { method: 'PATCH' });
     if (res.ok) {
-      loadOrders();
+      await loadOrders();
       loadSummary();
     }
   } catch (e) {
@@ -142,7 +193,7 @@ async function deleteOrder(id, name) {
   try {
     const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
     if (res.ok) {
-      loadOrders();
+      await loadOrders();
       loadSummary();
     } else {
       alert('Erro ao excluir pedido');
@@ -161,7 +212,7 @@ async function removeItem(orderId, productName, customerName) {
       body: JSON.stringify({ product_name: productName })
     });
     if (res.ok || res.status === 204) {
-      loadOrders();
+      await loadOrders();
       loadSummary();
     } else {
       alert('Erro ao remover item');
@@ -176,7 +227,7 @@ function filterOrders(filter) {
   document.querySelectorAll('.filter-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.filter === filter);
   });
-  loadOrders();
+  renderFilteredOrders();
 }
 
 // --- Products ---

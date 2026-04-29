@@ -175,6 +175,12 @@ function newOrder() {
   loadProducts();
 }
 
+function sairFechar() {
+  window.close();
+  // Se window.close() não funcionar (páginas não abertas por script), exibe mensagem
+  document.querySelector('.success-buttons').innerHTML = '<p style="color:var(--text-light);font-size:14px">Feche esta aba manualmente para sair.</p>';
+}
+
 function formatCents(cents) {
   return (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 }
