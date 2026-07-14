@@ -107,7 +107,17 @@
             <input type="text" id="new-product-name" placeholder="Nome do sabor">
             <input type="number" id="new-product-price" placeholder="Centavos" min="1" value="600">
           </div>
-          <button class="btn btn-primary btn-sm" onclick="createProduct()">Adicionar</button>
+          <div class="input-group" style="margin-top:12px">
+            <label for="product-category">Categoria</label>
+            <select id="product-category" class="category-select" onchange="onCategoryChange()">
+              <option value="">Carregando...</option>
+            </select>
+          </div>
+          <div id="new-category-group" class="product-form-row" style="margin-top:8px;display:none">
+            <input type="text" id="new-category-name" placeholder="Nome da nova categoria">
+            <button class="btn btn-sm btn-primary" onclick="createCategoryAndProduct()">Criar</button>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="createProduct()" style="margin-top:12px">Adicionar</button>
         </div>
         <div class="card" style="margin-top:12px">
           <h2>Sabores Ativos</h2>

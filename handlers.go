@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -81,6 +82,9 @@ func handleGetProducts(w http.ResponseWriter, r *http.Request) {
 		p.ID = doc.Ref.ID
 		products = append(products, p)
 	}
+	sort.Slice(products, func(i, j int) bool {
+		return products[i].Name < products[j].Name
+	})
 	json.NewEncoder(w).Encode(products)
 }
 
@@ -95,6 +99,10 @@ func handleCreateProduct(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Nome e obrigatorio", http.StatusBadRequest)
 		return
 	}
+	if req.Category == "" {
+		http.Error(w, "Categoria e obrigatoria", http.StatusBadRequest)
+		return
+	}
 	if req.PriceCents <= 0 {
 		http.Error(w, "Preco deve ser positivo", http.StatusBadRequest)
 		return
@@ -107,6 +115,7 @@ func handleCreateProduct(w http.ResponseWriter, r *http.Request) {
 
 	p := Product{
 		Name:       req.Name,
+		Category:   req.Category,
 		PriceCents: req.PriceCents,
 		Active:     active,
 		CreatedAt:  time.Now(),
@@ -154,6 +163,82 @@ func handleDeleteProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// --- Categories ---
+
+func handleGetCategories(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if fsClient == nil {
+		json.NewEncoder(w).Encode(memStore.GetCategories())
+		return
+	}
+
+	iter := fsClient.Collection("categories").OrderBy("Name", firestore.Asc).Documents(ctx)
+	docs, err := iter.GetAll()
+	if err != nil {
+		http.Error(w, "Erro ao buscar categorias", http.StatusInternalServerError)
+		return
+	}
+
+	categories := make([]Category, 0, len(docs))
+	for _, doc := range docs {
+		var c Category
+		if err := doc.DataTo(&c); err != nil {
+			log.Printf("ERRO: Falha ao deserializar categoria %s: %v", doc.Ref.ID, err)
+			continue
+		}
+		c.ID = doc.Ref.ID
+		categories = append(categories, c)
+	}
+	json.NewEncoder(w).Encode(categories)
+}
+
+func handleCreateCategory(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "JSON invalido", http.StatusBadRequest)
+		return
+	}
+
+	if req.Name == "" {
+		http.Error(w, "Nome da categoria e obrigatorio", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if fsClient == nil {
+		c := memStore.AddCategory(req.Name)
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(c)
+		return
+	}
+
+	// Verifica se ja existe
+	iter := fsClient.Collection("categories").Where("Name", "==", req.Name).Limit(1).Documents(ctx)
+	existing, _ := iter.GetAll()
+	if len(existing) > 0 {
+		var c Category
+		existing[0].DataTo(&c)
+		c.ID = existing[0].Ref.ID
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(c)
+		return
+	}
+
+	docRef, _, err := fsClient.Collection("categories").Add(ctx, Category{Name: req.Name})
+	if err != nil {
+		http.Error(w, "Erro ao criar categoria", http.StatusInternalServerError)
+		return
+	}
+
+	c := Category{ID: docRef.ID, Name: req.Name}
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(c)
 }
 
 // --- Orders ---

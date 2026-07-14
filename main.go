@@ -54,6 +54,10 @@ func main() {
 	mux.HandleFunc("POST /api/products", requireAuth(handleCreateProduct))
 	mux.HandleFunc("DELETE /api/products/{id}", requireAuth(handleDeleteProduct))
 
+	// Categories
+	mux.HandleFunc("GET /api/categories", handleGetCategories)
+	mux.HandleFunc("POST /api/categories", requireAuth(handleCreateCategory))
+
 	// Orders
 	mux.HandleFunc("POST /api/orders", handleCreateOrder)
 	mux.HandleFunc("GET /api/orders", requireAuth(handleGetOrders))

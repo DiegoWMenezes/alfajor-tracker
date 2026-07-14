@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(fly secrets *)",
+      "Bash(fly apps *)",
+      "Bash(go build *)",
+      "Bash(fly status *)",
+      "Bash(fly auth *)",
+      "Bash(xxd \"D:/Projetos/alfajor-tracker/static/js/admin.js\")",
+      "Bash(python3 -c ' *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(identify \"D:/Projetos/alfajor-tracker/img/logo.png\")",
+      "Bash(go run *)",
+      "Bash(python3 -c \"import json; f=open\\('service-account.json'\\); data=json.load\\(f\\); f.close\\(\\); print\\(json.dumps\\(data, separators=\\(',', ':'\\)\\)\\)\")",
+      "Bash(python -c \"import json; f=open\\('service-account.json'\\); data=json.load\\(f\\); f.close\\(\\); print\\(json.dumps\\(data, separators=\\(',', ':'\\)\\)\\)\")",
+      "Bash(git rebase *)",
+      "Bash(git commit *)",
+      "Read(//d/Projetos//**)",
+      "Read(//d/Projetos/**)",
+      "Bash(curl *)",
+      "Bash(PIX_KEY=12345678901 PIX_NAME=\"Alfajor Doce\" PIX_CITY=\"Sao Paulo\" go run .)",
+      "Bash(kill %1)",
+      "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch -f --msg-filter 'sed \"/Co-Authored-By/d\"' -- --all)",
+      "Bash(git update-ref *)",
+      "Bash(git reflog *)",
+      "Bash(git gc *)",
+      "Bash(java -version)",
+      "Bash(mvn -version)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "powerbi-modeling-mcp"
+  ]
+}

@@ -3,11 +3,17 @@ package main
 import "time"
 
 type Product struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
+	ID         string    `json:"id"`
+	Name       string    `json:"name"`
+	Category   string    `json:"category"`
 	PriceCents int       `json:"price_cents"`
-	Active    bool      `json:"active"`
+	Active     bool      `json:"active"`
 	CreatedAt  time.Time `json:"created_at"`
+}
+
+type Category struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type OrderItem struct {
@@ -31,6 +37,7 @@ type LoginRequest struct {
 
 type ProductRequest struct {
 	Name       string `json:"name"`
+	Category   string `json:"category"`
 	PriceCents int    `json:"price_cents"`
 	Active     *bool  `json:"active,omitempty"`
 }

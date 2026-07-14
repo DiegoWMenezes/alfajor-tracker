@@ -50,6 +50,7 @@ function showAdmin() {
   document.getElementById('admin-panel').style.display = 'block';
   loadSummary();
   loadOrders();
+  loadCategories();
   loadProductsAdmin();
   loadAnalytics();
   checkDemoMode();
@@ -230,6 +231,82 @@ function filterOrders(filter) {
   renderFilteredOrders();
 }
 
+// --- Categories ---
+
+let categoriesCache = [];
+
+async function loadCategories() {
+  try {
+    const res = await fetch('/api/categories');
+    if (!res.ok) throw new Error('Unauthorized');
+    categoriesCache = await res.json();
+    populateCategorySelect();
+  } catch (e) {
+    console.error('Erro ao carregar categorias:', e);
+  }
+}
+
+function populateCategorySelect() {
+  const select = document.getElementById('product-category');
+  const current = select.value;
+  select.innerHTML = '<option value="">Selecione uma categoria</option>';
+  categoriesCache.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.name;
+    opt.textContent = c.name;
+    select.appendChild(opt);
+  });
+  // Opcao para criar nova
+  const opt = document.createElement('option');
+  opt.value = '__new__';
+  opt.textContent = 'Criar Nova Categoria...';
+  select.appendChild(opt);
+  select.value = current || '';
+}
+
+function onCategoryChange() {
+  const select = document.getElementById('product-category');
+  const newCatGroup = document.getElementById('new-category-group');
+  if (select.value === '__new__') {
+    newCatGroup.style.display = 'block';
+    document.getElementById('new-category-name').focus();
+  } else {
+    newCatGroup.style.display = 'none';
+  }
+}
+
+async function createCategoryAndProduct() {
+  const newName = document.getElementById('new-category-name').value.trim();
+  if (!newName) {
+    alert('Informe o nome da nova categoria');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newName })
+    });
+
+    if (res.ok) {
+      const cat = await res.json();
+      // Atualiza o select e seleciona a nova categoria
+      await loadCategories();
+      const select = document.getElementById('product-category');
+      select.value = cat.name;
+      document.getElementById('new-category-group').style.display = 'none';
+      document.getElementById('new-category-name').value = '';
+      // Dispara criacao do produto
+      doCreateProduct(cat.name);
+    } else {
+      alert('Erro ao criar categoria');
+    }
+  } catch (e) {
+    alert('Erro ao conectar');
+  }
+}
+
 // --- Products ---
 
 async function loadProductsAdmin() {
@@ -252,6 +329,7 @@ async function loadProductsAdmin() {
       item.innerHTML = `
         <div>
           <span class="admin-product-name">${p.name}</span>
+          <span class="admin-product-category">[${p.category}]</span>
           <span class="admin-product-price"> - R$ ${formatCents(p.price_cents)}</span>
         </div>
         <button class="btn btn-sm btn-danger" onclick="deleteProduct('${p.id}')">Remover</button>
@@ -266,9 +344,15 @@ async function loadProductsAdmin() {
 async function createProduct() {
   const name = document.getElementById('new-product-name').value.trim();
   const priceCents = parseInt(document.getElementById('new-product-price').value);
+  const categorySelect = document.getElementById('product-category');
+  const category = categorySelect.value;
 
   if (!name) {
     alert('Informe o nome do sabor');
+    return;
+  }
+  if (!category || category === '__new__') {
+    alert('Selecione uma categoria');
     return;
   }
   if (!priceCents || priceCents <= 0) {
@@ -276,19 +360,28 @@ async function createProduct() {
     return;
   }
 
+  doCreateProduct(category);
+}
+
+async function doCreateProduct(category) {
+  const name = document.getElementById('new-product-name').value.trim();
+  const priceCents = parseInt(document.getElementById('new-product-price').value);
+
   try {
     const res = await fetch('/api/products', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, price_cents: priceCents, active: true })
+      body: JSON.stringify({ name, category, price_cents: priceCents, active: true })
     });
 
     if (res.ok) {
       document.getElementById('new-product-name').value = '';
       document.getElementById('new-product-price').value = '600';
+      document.getElementById('product-category').value = '';
       loadProductsAdmin();
     } else {
-      alert('Erro ao criar sabor');
+      const err = await res.text();
+      alert('Erro ao criar sabor: ' + err);
     }
   } catch (e) {
     alert('Erro ao conectar');

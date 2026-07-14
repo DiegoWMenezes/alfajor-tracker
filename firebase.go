@@ -96,6 +96,8 @@ func seedProducts(client *firestore.Client) {
 		return
 	}
 
+	seedCategories(client)
+
 	iter := client.Collection("products").Limit(1).Documents(ctx)
 	doc, err := iter.Next()
 	if err == nil && doc != nil {
@@ -105,15 +107,15 @@ func seedProducts(client *firestore.Client) {
 	iter.Stop()
 
 	flavors := []Product{
-		{Name: "Ninho", PriceCents: 600, Active: true},
-		{Name: "Avela", PriceCents: 600, Active: true},
-		{Name: "Amendoim", PriceCents: 600, Active: true},
-		{Name: "Cookie", PriceCents: 600, Active: true},
-		{Name: "Ovomaltine", PriceCents: 600, Active: true},
-		{Name: "Kinder", PriceCents: 600, Active: true},
-		{Name: "Pistache", PriceCents: 600, Active: true},
-		{Name: "Morango", PriceCents: 600, Active: true},
-		{Name: "Doce de Leite", PriceCents: 600, Active: true},
+		{Name: "Ninho", Category: "Alfajor", PriceCents: 600, Active: true},
+		{Name: "Avela", Category: "Alfajor", PriceCents: 600, Active: true},
+		{Name: "Amendoim", Category: "Alfajor", PriceCents: 600, Active: true},
+		{Name: "Cookie", Category: "Alfajor", PriceCents: 600, Active: true},
+		{Name: "Ovomaltine", Category: "Alfajor", PriceCents: 600, Active: true},
+		{Name: "Kinder", Category: "Alfajor", PriceCents: 600, Active: true},
+		{Name: "Pistache", Category: "Alfajor", PriceCents: 600, Active: true},
+		{Name: "Morango", Category: "Alfajor", PriceCents: 600, Active: true},
+		{Name: "Doce de Leite", Category: "Alfajor", PriceCents: 600, Active: true},
 	}
 
 	for _, p := range flavors {
@@ -123,4 +125,31 @@ func seedProducts(client *firestore.Client) {
 		}
 	}
 	fmt.Println("Sabores iniciais criados")
+}
+
+func seedCategories(client *firestore.Client) {
+	if client == nil {
+		return
+	}
+
+	iter := client.Collection("categories").Limit(1).Documents(ctx)
+	doc, err := iter.Next()
+	if err == nil && doc != nil {
+		iter.Stop()
+		return
+	}
+	iter.Stop()
+
+	categories := []Category{
+		{Name: "Alfajor"},
+		{Name: "Cone"},
+	}
+
+	for _, c := range categories {
+		_, _, err := client.Collection("categories").Add(ctx, c)
+		if err != nil {
+			log.Printf("Erro ao criar categoria %s: %v", c.Name, err)
+		}
+	}
+	fmt.Println("Categorias iniciais criadas")
 }

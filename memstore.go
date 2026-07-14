@@ -2,15 +2,17 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 )
 
 type MemStore struct {
-	mu       sync.RWMutex
-	products []Product
-	orders   []Order
-	nextID   int
+	mu         sync.RWMutex
+	products   []Product
+	categories []Category
+	orders     []Order
+	nextID     int
 }
 
 var memStore *MemStore
@@ -18,15 +20,19 @@ var memStore *MemStore
 func initMemStore() {
 	memStore = &MemStore{
 		products: []Product{
-			{ID: "1", Name: "Ninho", PriceCents: 600, Active: true},
-			{ID: "2", Name: "Avela", PriceCents: 600, Active: true},
-			{ID: "3", Name: "Amendoim", PriceCents: 600, Active: true},
-			{ID: "4", Name: "Cookie", PriceCents: 600, Active: true},
-			{ID: "5", Name: "Ovomaltine", PriceCents: 600, Active: true},
-			{ID: "6", Name: "Kinder", PriceCents: 600, Active: true},
-			{ID: "7", Name: "Pistache", PriceCents: 600, Active: true},
-			{ID: "8", Name: "Morango", PriceCents: 600, Active: true},
-			{ID: "9", Name: "Doce de Leite", PriceCents: 600, Active: true},
+			{ID: "1", Name: "Ninho", Category: "Alfajor", PriceCents: 600, Active: true},
+			{ID: "2", Name: "Avela", Category: "Alfajor", PriceCents: 600, Active: true},
+			{ID: "3", Name: "Amendoim", Category: "Alfajor", PriceCents: 600, Active: true},
+			{ID: "4", Name: "Cookie", Category: "Alfajor", PriceCents: 600, Active: true},
+			{ID: "5", Name: "Ovomaltine", Category: "Alfajor", PriceCents: 600, Active: true},
+			{ID: "6", Name: "Kinder", Category: "Alfajor", PriceCents: 600, Active: true},
+			{ID: "7", Name: "Pistache", Category: "Alfajor", PriceCents: 600, Active: true},
+			{ID: "8", Name: "Morango", Category: "Alfajor", PriceCents: 600, Active: true},
+			{ID: "9", Name: "Doce de Leite", Category: "Alfajor", PriceCents: 600, Active: true},
+		},
+		categories: []Category{
+			{ID: "1", Name: "Alfajor"},
+			{ID: "2", Name: "Cone"},
 		},
 		nextID: 10,
 	}
@@ -46,6 +52,9 @@ func (m *MemStore) GetActiveProducts() []Product {
 			result = append(result, p)
 		}
 	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Name < result[j].Name
+	})
 	return result
 }
 
@@ -56,6 +65,31 @@ func (m *MemStore) AddProduct(p Product) Product {
 	p.CreatedAt = time.Now()
 	m.products = append(m.products, p)
 	return p
+}
+
+func (m *MemStore) GetCategories() []Category {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	result := make([]Category, len(m.categories))
+	copy(result, m.categories)
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Name < result[j].Name
+	})
+	return result
+}
+
+func (m *MemStore) AddCategory(name string) Category {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	// Verifica se ja existe
+	for _, c := range m.categories {
+		if c.Name == name {
+			return c
+		}
+	}
+	c := Category{ID: m.genID(), Name: name}
+	m.categories = append(m.categories, c)
+	return c
 }
 
 func (m *MemStore) DeactivateProduct(id string) bool {

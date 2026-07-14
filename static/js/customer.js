@@ -13,23 +13,47 @@ async function loadProducts() {
     }
 
     list.innerHTML = '';
+
+    // Agrupa produtos por categoria
+    const categories = {};
     products.forEach(p => {
       cart[p.id] = 0;
-      const item = document.createElement('div');
-      item.className = 'product-item';
-      item.id = `product-${p.id}`;
-      item.innerHTML = `
-        <div class="product-info">
-          <span class="product-name">${p.name}</span>
-          <span class="product-price">R$ ${formatCents(p.price_cents)}</span>
-        </div>
-        <div class="qty-control">
-          <button class="qty-btn minus" onclick="changeQty('${p.id}', -1)">-</button>
-          <span class="qty-value" id="qty-${p.id}">0</span>
-          <button class="qty-btn" onclick="changeQty('${p.id}', 1)">+</button>
-        </div>
-      `;
-      list.appendChild(item);
+      if (!categories[p.category]) categories[p.category] = [];
+      categories[p.category].push(p);
+    });
+
+    Object.keys(categories).forEach(catName => {
+      const section = document.createElement('div');
+      section.className = 'category-section';
+
+      const title = document.createElement('h3');
+      title.className = 'category-title';
+      title.textContent = catName;
+      section.appendChild(title);
+
+      const itemsWrapper = document.createElement('div');
+      itemsWrapper.className = 'product-list';
+
+      categories[catName].forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'product-item';
+        item.id = `product-${p.id}`;
+        item.innerHTML = `
+          <div class="product-info">
+            <span class="product-name">${p.name}</span>
+            <span class="product-price">R$ ${formatCents(p.price_cents)}</span>
+          </div>
+          <div class="qty-control">
+            <button class="qty-btn minus" onclick="changeQty('${p.id}', -1)">-</button>
+            <span class="qty-value" id="qty-${p.id}">0</span>
+            <button class="qty-btn" onclick="changeQty('${p.id}', 1)">+</button>
+          </div>
+        `;
+        itemsWrapper.appendChild(item);
+      });
+
+      section.appendChild(itemsWrapper);
+      list.appendChild(section);
     });
   } catch (e) {
     list.innerHTML = '<div class="empty-state"><p>Erro ao carregar sabores</p></div>';
