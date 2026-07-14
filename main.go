@@ -69,6 +69,9 @@ func main() {
 	// Summary
 	mux.HandleFunc("GET /api/summary", requireAuth(handleSummary))
 
+	// Migrate (temporario)
+	mux.HandleFunc("POST /api/migrate", requireAuth(handleMigrate))
+
 	// Status
 	mux.HandleFunc("GET /api/status", handleStatus)
 

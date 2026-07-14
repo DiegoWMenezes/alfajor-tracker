@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -239,6 +240,93 @@ func handleCreateCategory(w http.ResponseWriter, r *http.Request) {
 	c := Category{ID: docRef.ID, Name: req.Name}
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(c)
+}
+
+// --- Migrate (temporario) ---
+
+func handleMigrate(w http.ResponseWriter, r *http.Request) {
+	if fsClient == nil {
+		http.Error(w, "Migration so funciona com Firebase", http.StatusBadRequest)
+		return
+	}
+
+	// 1. Cria categorias padrao
+	categories := []string{"Alfajor", "Cone"}
+	for _, name := range categories {
+		iter := fsClient.Collection("categories").Where("Name", "==", name).Limit(1).Documents(ctx)
+		docs, _ := iter.GetAll()
+		if len(docs) == 0 {
+			fsClient.Collection("categories").Add(ctx, Category{Name: name})
+		}
+	}
+
+	// 2. Migra produtos
+	iter := fsClient.Collection("products").Documents(ctx)
+	docs, err := iter.GetAll()
+	if err != nil {
+		http.Error(w, "Erro ao buscar produtos", http.StatusInternalServerError)
+		return
+	}
+
+	type result struct {
+		Name     string `json:"name"`
+		Category string `json:"category"`
+		NewName  string `json:"new_name,omitempty"`
+	}
+	results := []result{}
+
+	for _, doc := range docs {
+		var p Product
+		if err := doc.DataTo(&p); err != nil {
+			continue
+		}
+		if p.Category != "" {
+			continue
+		}
+
+		nameUpper := strings.ToUpper(p.Name)
+		category := ""
+		newName := p.Name
+
+		if strings.HasPrefix(nameUpper, "ALFAJOR -") {
+			category = "Alfajor"
+			newName = strings.TrimSpace(strings.TrimPrefix(p.Name, "Alfajor -"))
+			newName = strings.TrimSpace(strings.TrimPrefix(newName, "ALFAJOR -"))
+		} else if strings.HasPrefix(nameUpper, "CONE ") {
+			category = "Cone"
+			newName = strings.TrimSpace(strings.TrimPrefix(p.Name, "CONE "))
+			newName = strings.TrimSpace(strings.TrimPrefix(newName, "Cone "))
+		}
+
+		if category == "" {
+			continue
+		}
+
+		updates := []firestore.Update{
+			{Path: "Category", Value: category},
+		}
+		if newName != p.Name {
+			updates = append(updates, firestore.Update{Path: "Name", Value: newName})
+		}
+
+		_, err := doc.Ref.Update(ctx, updates)
+		if err != nil {
+			log.Printf("Erro ao migrar %s: %v", p.Name, err)
+			continue
+		}
+
+		r := result{Name: p.Name, Category: category}
+		if newName != p.Name {
+			r.NewName = newName
+		}
+		results = append(results, r)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"migrated": len(results),
+		"items":    results,
+	})
 }
 
 // --- Orders ---
