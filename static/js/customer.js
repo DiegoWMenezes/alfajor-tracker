@@ -201,6 +201,13 @@ function updateAccountUI() {
     label.textContent = 'Entrar';
     avatar.innerHTML = '👤';
   }
+  updateOrderIdentityUI();
+}
+
+function updateOrderIdentityUI() {
+  const card = document.getElementById('guest-name-card');
+  if (!card) return;
+  card.style.display = authUser ? 'none' : 'block';
 }
 
 function applyTheme(theme) {
@@ -407,7 +414,9 @@ function updateSummary() {
 }
 
 async function submitOrder() {
-  const name = document.getElementById('name').value.trim();
+  const name = authUser
+    ? (authUser.displayName || authUser.email || '').trim()
+    : document.getElementById('name').value.trim();
   if (!name) {
     alert('Por favor, informe seu nome');
     return;

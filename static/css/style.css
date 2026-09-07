@@ -1382,3 +1382,26 @@ body {
 .header-logo {
   box-shadow: var(--shadow);
 }
+
+[data-theme="dark"] .input-group input {
+  background: var(--card);
+  color: var(--text);
+}
+
+[data-theme="dark"] .input-group input:focus {
+  background: var(--card);
+}
+
+[data-theme="dark"] .input-group input::placeholder {
+  color: var(--text-light);
+  opacity: 0.7;
+}
+
+[data-theme="dark"] input:-webkit-autofill,
+[data-theme="dark"] input:-webkit-autofill:hover,
+[data-theme="dark"] input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text);
+  -webkit-box-shadow: 0 0 0 1000px var(--card) inset;
+  box-shadow: 0 0 0 1000px var(--card) inset;
+  caret-color: var(--text);
+}
