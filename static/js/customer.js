@@ -187,13 +187,35 @@ async function logoutCustomer() {
 }
 
 function updateAccountUI() {
-  const btn = document.getElementById('account-btn');
+  const label = document.getElementById('account-label');
+  const avatar = document.getElementById('account-avatar');
   if (authUser) {
     const name = authUser.displayName || authUser.email || 'Minha conta';
-    btn.textContent = name;
+    label.textContent = name.split(' ')[0] || 'Minha conta';
+    if (authUser.photoURL) {
+      avatar.innerHTML = '<img src="' + authUser.photoURL + '" alt="Foto do perfil">';
+    } else {
+      avatar.innerHTML = '👤';
+    }
   } else {
-    btn.textContent = 'Entrar';
+    label.textContent = 'Entrar';
+    avatar.innerHTML = '👤';
   }
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('theme-btn');
+  if (btn) {
+    btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  const next = current === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('alfajor-theme', next);
+  applyTheme(next);
 }
 
 function firebaseErrorMessage(e) {
@@ -497,5 +519,6 @@ document.addEventListener('click', (e) => {
 });
 
 document.getElementById('submit-btn').addEventListener('click', submitOrder);
+applyTheme(localStorage.getItem('alfajor-theme') || 'light');
 initFirebase();
 loadProducts();

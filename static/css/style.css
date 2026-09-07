@@ -1029,6 +1029,9 @@ body {
   top: 16px;
   right: 16px;
   z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .account-btn {
@@ -1280,4 +1283,80 @@ body {
 .admin-header-actions {
   display: flex;
   gap: 8px;
+}
+
+/* Modern design system / theme */
+[data-theme="dark"] {
+  --primary: #f3a6c8;
+  --primary-dark: #f08cb9;
+  --primary-light: #3a2735;
+  --accent: #f7b9d0;
+  --bg: #17141b;
+  --card: #231e28;
+  --text: #f4edf1;
+  --text-light: #b6a5b1;
+  --success: #63c179;
+  --danger: #ff6b6b;
+  --danger-light: #3b2024;
+  --border: #372f3d;
+  --shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+}
+
+.theme-btn {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 17px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+}
+
+.account-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+}
+
+.account-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  font-size: 14px;
+  flex: 0 0 auto;
+}
+
+.account-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.card,
+.modal,
+.account-menu,
+.btn,
+.input-group input,
+.product-item,
+.order-card {
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  border: 0;
+}
+
+.header-logo {
+  box-shadow: var(--shadow);
 }
