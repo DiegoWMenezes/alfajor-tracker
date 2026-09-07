@@ -34,10 +34,13 @@ async function initFirebase() {
 // ---------- Auth UI ----------
 
 function toggleAccountMenu() {
-  if (!authUser) {
+  const currentUser = (firebaseReady && firebase.auth().currentUser) || authUser;
+  if (!currentUser) {
     openAuthModal('login');
     return;
   }
+  authUser = currentUser;
+  updateAccountUI();
   const menu = document.getElementById('account-menu');
   menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
 }
