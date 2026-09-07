@@ -38,45 +38,81 @@ func hashPassword(password string) (string, error) {
 }
 
 type sessionClaims struct {
-	Role string `json:"role"`
+	Role  string `json:"role"`
+	Email string `json:"email,omitempty"`
 	jwt.RegisteredClaims
 }
 
-func createSessionToken() (string, error) {
+func createSessionToken(role, uid, email string) (string, error) {
 	claims := sessionClaims{
-		Role: "admin",
+		Role:  role,
+		Email: email,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer: "alfajor-tracker",
 		},
+	}
+	if uid != "" {
+		claims.Subject = uid
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(sessionSecret))
 }
 
-func validateSession(r *http.Request) bool {
+func validateSession(r *http.Request) (*sessionClaims, bool) {
 	cookie, err := r.Cookie("session")
 	if err != nil {
-		return false
+		return nil, false
 	}
 
 	token, err := jwt.ParseWithClaims(cookie.Value, &sessionClaims{}, func(t *jwt.Token) (interface{}, error) {
 		return []byte(sessionSecret), nil
 	})
 	if err != nil || !token.Valid {
-		return false
+		return nil, false
 	}
 
 	claims, ok := token.Claims.(*sessionClaims)
 	if !ok {
-		return false
+		return nil, false
 	}
 
-	return claims.Role == "admin"
+	return claims, claims.Role == "admin"
+}
+
+func validateCustomerSession(r *http.Request) (*sessionClaims, bool) {
+	cookie, err := r.Cookie("customer_session")
+	if err != nil {
+		return nil, false
+	}
+
+	token, err := jwt.ParseWithClaims(cookie.Value, &sessionClaims{}, func(t *jwt.Token) (interface{}, error) {
+		return []byte(sessionSecret), nil
+	})
+	if err != nil || !token.Valid {
+		return nil, false
+	}
+
+	claims, ok := token.Claims.(*sessionClaims)
+	if !ok || claims.Role != "customer" {
+		return nil, false
+	}
+
+	return claims, true
 }
 
 func requireAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !validateSession(r) {
+		if _, ok := validateSession(r); !ok {
+			http.Error(w, "Nao autorizado", http.StatusUnauthorized)
+			return
+		}
+		next(w, r)
+	}
+}
+
+func requireCustomer(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if _, ok := validateCustomerSession(r); !ok {
 			http.Error(w, "Nao autorizado", http.StatusUnauthorized)
 			return
 		}

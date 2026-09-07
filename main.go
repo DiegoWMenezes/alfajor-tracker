@@ -22,6 +22,9 @@ func main() {
 	fsClient = initFirebase()
 	if fsClient != nil {
 		seedProducts(fsClient)
+		if err := initFirebaseAuth(); err != nil {
+			log.Printf("AVISO: Firebase Auth nao inicializado: %v", err)
+		}
 		fmt.Println("Modo: Firebase Firestore (dados persistentes)")
 	} else {
 		initMemStore()
@@ -48,6 +51,11 @@ func main() {
 	// Auth
 	mux.HandleFunc("POST /api/login", handleLogin)
 	mux.HandleFunc("POST /api/logout", handleLogout)
+	mux.HandleFunc("POST /api/auth/session", handleFirebaseSession)
+	mux.HandleFunc("POST /api/auth/logout", handleCustomerLogout)
+	mux.HandleFunc("GET /api/me", handleMe)
+	mux.HandleFunc("GET /api/my/orders", handleMyOrders)
+	mux.HandleFunc("GET /api/firebase-config", handleFirebaseConfig)
 
 	// Products
 	mux.HandleFunc("GET /api/products", handleGetProducts)
@@ -68,6 +76,7 @@ func main() {
 
 	// Summary
 	mux.HandleFunc("GET /api/summary", requireAuth(handleSummary))
+	mux.HandleFunc("GET /api/export/orders", requireAuth(handleExportOrders))
 
 	// Status
 	mux.HandleFunc("GET /api/status", handleStatus)

@@ -38,6 +38,7 @@ body {
 .header {
   text-align: center;
   padding: 32px 0 20px;
+  position: relative;
 }
 
 .header-logo {
@@ -1020,4 +1021,263 @@ body {
     max-width: 540px;
     padding: 24px;
   }
+}
+
+/* Account / login */
+.account-area {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 20;
+}
+
+.account-btn {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-menu {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  min-width: 190px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.account-menu button {
+  display: block;
+  width: 100%;
+  padding: 12px 14px;
+  background: none;
+  border: 0;
+  text-align: left;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.account-menu button:hover {
+  background: var(--primary-light);
+}
+
+/* Auth modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(74, 53, 72, 0.42);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modal {
+  width: 100%;
+  max-width: 420px;
+  background: var(--card);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 16px 40px rgba(74, 53, 72, 0.22);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.modal-header h2 {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--primary-dark);
+}
+
+.modal-header p {
+  color: var(--text-light);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.modal-close {
+  background: none;
+  border: 0;
+  font-size: 26px;
+  color: var(--text-light);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.auth-tab {
+  padding: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-light);
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.auth-tab.active {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary-dark);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn-google {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.btn-google::before {
+  content: "G";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #4285f4;
+  color: #fff;
+  font-size: 13px;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-light);
+  font-size: 11px;
+  margin: 14px 0;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.auth-error,
+.auth-note {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.auth-error {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.auth-note {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+/* Views */
+.view-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 16px;
+}
+
+.view-head h2 {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.profile-line {
+  margin: 12px 0;
+  color: var(--text);
+  font-size: 14px;
+  word-break: break-all;
+}
+
+/* Orders / raffle ids */
+.sorteio-code {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.badge-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.my-order-card {
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+
+.my-order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.my-order-item:last-child {
+  border-bottom: 0;
+}
+
+.success-codes {
+  background: var(--primary-light);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 10px 0 14px;
+  text-align: left;
+  font-size: 13px;
+  color: var(--primary-dark);
+  line-height: 1.6;
+}
+
+.admin-header-actions {
+  display: flex;
+  gap: 8px;
 }

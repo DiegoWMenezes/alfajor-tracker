@@ -17,18 +17,22 @@ type Category struct {
 }
 
 type OrderItem struct {
-	ProductName string `json:"product_name"`
-	Quantity    int    `json:"quantity"`
-	UnitPriceCents int `json:"unit_price_cents"`
+	ProductName    string `json:"product_name"`
+	Quantity       int    `json:"quantity"`
+	UnitPriceCents int    `json:"unit_price_cents"`
+	Code           string `json:"code"`
 }
 
 type Order struct {
-	ID           string      `json:"id"`
-	CustomerName string      `json:"customer_name"`
-	Items        []OrderItem `json:"items"`
-	TotalCents   int         `json:"total_cents"`
-	Paid         bool        `json:"paid"`
-	CreatedAt    time.Time   `json:"created_at"`
+	ID            string      `json:"id"`
+	OrderCode     string      `json:"order_code"`
+	CustomerName  string      `json:"customer_name"`
+	CustomerUID   string      `json:"customer_uid,omitempty"`
+	CustomerEmail string      `json:"customer_email,omitempty"`
+	Items         []OrderItem `json:"items"`
+	TotalCents    int         `json:"total_cents"`
+	Paid          bool        `json:"paid"`
+	CreatedAt     time.Time   `json:"created_at"`
 }
 
 type LoginRequest struct {
@@ -48,8 +52,8 @@ type OrderRequest struct {
 }
 
 type Summary struct {
-	TotalOrders   int `json:"total_orders"`
-	TotalSoldCents int `json:"total_sold_cents"`
-	TotalPaidCents int `json:"total_paid_cents"`
+	TotalOrders       int `json:"total_orders"`
+	TotalSoldCents    int `json:"total_sold_cents"`
+	TotalPaidCents    int `json:"total_paid_cents"`
 	TotalPendingCents int `json:"total_pending_cents"`
 }

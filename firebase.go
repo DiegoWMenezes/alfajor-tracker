@@ -9,13 +9,14 @@ import (
 	"os"
 	"strings"
 
-	firebase "firebase.google.com/go/v4"
 	"cloud.google.com/go/firestore"
+	firebase "firebase.google.com/go/v4"
 	"google.golang.org/api/option"
 )
 
 var (
 	fsClient *firestore.Client
+	fbApp    *firebase.App
 	ctx      = context.Background()
 )
 
@@ -79,6 +80,7 @@ func initFirebase() *firestore.Client {
 		log.Println("AVISO: Usando modo demo (dados em memoria)")
 		return nil
 	}
+	fbApp = app
 
 	client, err := app.Firestore(ctx)
 	if err != nil {

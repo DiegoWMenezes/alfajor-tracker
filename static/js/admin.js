@@ -1,4 +1,4 @@
-let currentFilter = 'all';
+﻿let currentFilter = 'all';
 let currentClient = '';
 let isLoggedIn = false;
 let allOrders = [];
@@ -134,15 +134,14 @@ function renderFilteredOrders() {
     card.className = `order-card ${o.paid ? 'paid' : ''}`;
     card.id = `order-${o.id}`;
 
-    const itemsHtml = o.items.map(i =>
-      `<span class="order-item-tag">${i.product_name} x${i.quantity}<button class="item-remove-btn" onclick="removeItem('${o.id}', '${escapeAttr(i.product_name)}', '${escapeAttr(o.customer_name)}')">×</button></span>`
+    const itemsHtml = o.items.map(i =>`<span class="order-item-tag">${i.product_name} x${i.quantity} <span class="sorteio-code">ID ${i.code || '-'}</span><button class="item-remove-btn" onclick="removeItem('${o.id}', '${escapeAttr(i.product_name)}', '${escapeAttr(o.customer_name)}')">×</button></span>`
     ).join('');
 
     const time = new Date(o.created_at).toLocaleString('pt-BR');
 
     card.innerHTML = `
       <div class="order-header">
-        <span class="order-name">${o.customer_name}</span>
+        <span class="order-name">${o.customer_name} <span class="sorteio-code">Pedido ${o.order_code || o.id || '-'}</span></span>
         <span class="order-time">${time}</span>
       </div>
       <div class="order-items">${itemsHtml}</div>
@@ -437,6 +436,10 @@ function escapeAttr(str) {
   return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
 }
 
+function exportOrders() {
+  window.location.href = '/api/export/orders';
+}
+
 // --- Analytics ---
 
 let analyticsOrders = [];
@@ -654,3 +657,4 @@ fetch('/api/summary').then(res => {
 }).catch(() => {
   if (typeof hideLoading === 'function') hideLoading();
 });
+

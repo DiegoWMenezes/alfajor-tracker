@@ -25,7 +25,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := createSessionToken()
+	token, err := createSessionToken("admin", "", "")
 	if err != nil {
 		http.Error(w, "Erro ao criar sessao", http.StatusInternalServerError)
 		return
@@ -287,12 +287,24 @@ func handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		total += item.UnitPriceCents * item.Quantity
 	}
 
+	createdItems := make([]OrderItem, len(req.Items))
+	for i, item := range req.Items {
+		createdItems[i] = item
+		createdItems[i].Code = newCode("SORT")
+	}
+
 	order := Order{
+		OrderCode:    newCode("PED"),
 		CustomerName: req.CustomerName,
-		Items:        req.Items,
+		Items:        createdItems,
 		TotalCents:   total,
 		Paid:         false,
 		CreatedAt:    time.Now(),
+	}
+
+	if claims, ok := customerClaimsFromRequest(r); ok {
+		order.CustomerUID = claims.Subject
+		order.CustomerEmail = claims.Email
 	}
 
 	w.Header().Set("Content-Type", "application/json")

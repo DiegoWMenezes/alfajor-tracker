@@ -19,6 +19,78 @@
       <img src="/static/img/logo.png" alt="Alfajor" class="header-logo">
       <h1>Alfajor</h1>
       <p>Escolha seus sabores e faca seu pedido</p>
+      <div class="account-area">
+        <button id="account-btn" class="btn btn-sm btn-outline account-btn" type="button" onclick="toggleAccountMenu()">
+          Entrar
+        </button>
+        <div id="account-menu" class="account-menu" style="display:none">
+          <button type="button" onclick="showAccount()">Perfil</button>
+          <button type="button" onclick="showMyOrders()">Minhas compras</button>
+          <button type="button" onclick="logoutCustomer()">Sair</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de login/cadastro -->
+    <div id="auth-modal" class="modal-backdrop" style="display:none">
+      <div class="modal">
+        <div class="modal-header">
+          <div>
+            <h2 id="auth-title">Entrar</h2>
+            <p id="auth-subtitle">Acompanhe seus pedidos e participe dos sorteios</p>
+          </div>
+          <button class="modal-close" type="button" onclick="closeAuthModal()">×</button>
+        </div>
+        <div class="auth-tabs">
+          <button id="tab-login" class="auth-tab active" type="button" onclick="switchAuthTab('login')">Entrar</button>
+          <button id="tab-register" class="auth-tab" type="button" onclick="switchAuthTab('register')">Criar conta</button>
+        </div>
+        <button class="btn btn-google" type="button" onclick="loginWithGoogle()">Continuar com Google</button>
+        <div class="auth-divider">ou use seu e-mail</div>
+        <form id="auth-form" onsubmit="return submitAuthForm(event)">
+          <div class="input-group">
+            <label for="auth-email">E-mail</label>
+            <input type="email" id="auth-email" autocomplete="email" placeholder="voce@email.com" required>
+          </div>
+          <div class="input-group" id="auth-name-group" style="display:none">
+            <label for="auth-name">Nome</label>
+            <input type="text" id="auth-name" autocomplete="name" placeholder="Seu nome">
+          </div>
+          <div class="input-group">
+            <label for="auth-password">Senha</label>
+            <input type="password" id="auth-password" autocomplete="current-password" placeholder="Sua senha" required>
+          </div>
+          <div class="input-group" id="auth-confirm-group" style="display:none">
+            <label for="auth-confirm">Confirmar senha</label>
+            <input type="password" id="auth-confirm" autocomplete="new-password" placeholder="Repita a senha">
+          </div>
+          <p id="auth-error" class="auth-error" style="display:none"></p>
+          <button class="btn btn-primary btn-block" id="auth-submit" type="submit">Entrar</button>
+        </form>
+        <p id="auth-note" class="auth-note" style="display:none"></p>
+      </div>
+    </div>
+
+    <!-- Perfil -->
+    <div id="account-view" style="display:none">
+      <div class="card">
+        <div class="view-head">
+          <button class="btn btn-sm btn-outline" type="button" onclick="showOrderForm()">← Voltar</button>
+          <h2>Perfil</h2>
+        </div>
+        <p class="profile-line"><strong>E-mail:</strong> <span id="profile-email">-</span></p>
+        <p class="profile-line"><strong>ID do cliente:</strong> <span id="profile-uid">-</span></p>
+        <button class="btn btn-sm btn-outline" type="button" onclick="logoutCustomer()">Sair da conta</button>
+      </div>
+    </div>
+
+    <!-- Minhas compras -->
+    <div id="my-orders-view" style="display:none">
+      <div class="view-head">
+        <button class="btn btn-sm btn-outline" type="button" onclick="showOrderForm()">← Voltar</button>
+        <h2>Minhas compras</h2>
+      </div>
+      <div id="my-orders-list" class="product-list"></div>
     </div>
 
     <!-- Formulario de pedido -->
@@ -55,6 +127,7 @@
       <div class="success-icon">&#10003;</div>
       <h2>Pedido confirmado!</h2>
       <p id="success-name"></p>
+      <div id="success-codes" class="success-codes"></div>
       <div id="success-items" class="card"></div>
       <p id="success-total" style="font-weight:800;font-size:22px;color:var(--primary-dark);margin:16px 0"></p>
       <div id="pix-section" class="pix-section" style="display:none">
@@ -70,6 +143,8 @@
     </div>
   </div>
 
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="/static/js/customer.js"></script>
   <script>
     function hideLoading() {
