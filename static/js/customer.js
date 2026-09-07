@@ -223,7 +223,6 @@ function showAccount() {
   document.getElementById('account-view').style.display = 'block';
   document.getElementById('my-orders-view').style.display = 'none';
   document.getElementById('profile-email').textContent = authUser ? (authUser.email || '-') : '-';
-  document.getElementById('profile-uid').textContent = authUser ? authUser.uid : '-';
   stopOrdersPolling();
 }
 
