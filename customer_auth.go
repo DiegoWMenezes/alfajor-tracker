@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 
-	"cloud.google.com/go/firestore"
 	"firebase.google.com/go/v4/auth"
 )
 
@@ -126,7 +126,6 @@ func handleMyOrders(w http.ResponseWriter, r *http.Request) {
 
 	iter := fsClient.Collection("orders").
 		Where("CustomerUID", "==", claims.Subject).
-		OrderBy("CreatedAt", firestore.Desc).
 		Documents(r.Context())
 	docs, err := iter.GetAll()
 	if err != nil {
@@ -143,6 +142,10 @@ func handleMyOrders(w http.ResponseWriter, r *http.Request) {
 		order.ID = doc.Ref.ID
 		orders = append(orders, order)
 	}
+
+	sort.Slice(orders, func(i, j int) bool {
+		return orders[i].CreatedAt.After(orders[j].CreatedAt)
+	})
 
 	json.NewEncoder(w).Encode(orders)
 }
