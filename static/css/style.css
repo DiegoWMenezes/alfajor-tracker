@@ -1043,7 +1043,7 @@ body {
 
 .account-menu {
   position: absolute;
-  top: 82px;
+  top: 60px;
   right: 0;
   min-width: 190px;
   background: var(--card);
@@ -1362,6 +1362,79 @@ body {
   height: 100%;
   object-fit: cover;
   border-radius: 50%;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 0 14px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.brand-logo {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  flex: 0 0 auto;
+}
+
+.brand-text h1 {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--primary-dark);
+  letter-spacing: -0.4px;
+  line-height: 1;
+}
+
+.brand-text p {
+  color: var(--text-light);
+  font-size: 12px;
+  margin-top: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+}
+
+.profile-area {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.account-avatar-btn {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.account-avatar-btn .account-avatar {
+  width: 100%;
+  height: 100%;
+  font-size: 24px;
+  border: 2px solid var(--border);
+  box-shadow: var(--shadow);
 }
 
 .card,

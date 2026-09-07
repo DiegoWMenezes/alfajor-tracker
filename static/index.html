@@ -15,20 +15,26 @@
   </div>
 
   <div class="container" id="app-content" style="opacity:0">
-    <div class="header">
-      <img src="/static/img/logo.png" alt="Alfajor" class="header-logo">
-      <h1>Alfajor</h1>
-      <p>Escolha seus sabores e faca seu pedido</p>
-      <div class="account-area">
+    <div class="topbar">
+      <div class="brand">
+        <img src="/static/img/logo.png" alt="Doces" class="brand-logo">
+        <div class="brand-text">
+          <h1>Doces</h1>
+          <p>Escolha seus sabores e faca seu pedido</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
         <button id="theme-btn" class="theme-btn" type="button" onclick="toggleTheme()" aria-label="Alternar tema">🌙</button>
-        <button id="account-btn" class="profile-chip" type="button" onclick="toggleAccountMenu()">
-          <span id="account-avatar" class="account-avatar account-avatar-lg">👤</span>
+        <div class="profile-area">
+          <button id="account-btn" class="account-avatar-btn" type="button" onclick="toggleAccountMenu()">
+            <span id="account-avatar" class="account-avatar">👤</span>
+          </button>
           <span id="account-label" class="account-label">Entrar</span>
-        </button>
-        <div id="account-menu" class="account-menu" style="display:none">
-          <button type="button" onclick="showAccount()">Perfil</button>
-          <button type="button" onclick="showMyOrders()">Minhas compras</button>
-          <button type="button" onclick="logoutCustomer()">Sair</button>
+          <div id="account-menu" class="account-menu" style="display:none">
+            <button type="button" onclick="showAccount()">Perfil</button>
+            <button type="button" onclick="showMyOrders()">Minhas compras</button>
+            <button type="button" onclick="logoutCustomer()">Sair</button>
+          </div>
         </div>
       </div>
     </div>
