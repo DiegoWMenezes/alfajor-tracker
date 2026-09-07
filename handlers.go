@@ -290,11 +290,11 @@ func handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 	createdItems := make([]OrderItem, len(req.Items))
 	for i, item := range req.Items {
 		createdItems[i] = item
-		createdItems[i].Code = newCode("SORT")
+		createdItems[i].Code = newNumericCode("SORT", 6)
 	}
 
 	order := Order{
-		OrderCode:    newCode("PED"),
+		OrderCode:    newNumericCode("PED", 6),
 		CustomerName: req.CustomerName,
 		Items:        createdItems,
 		TotalCents:   total,

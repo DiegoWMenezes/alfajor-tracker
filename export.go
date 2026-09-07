@@ -3,8 +3,8 @@ package main
 import (
 	"crypto/rand"
 	"encoding/csv"
-	"encoding/hex"
 	"fmt"
+	"math/big"
 	"net/http"
 	"sort"
 	"strconv"
@@ -13,12 +13,13 @@ import (
 	"cloud.google.com/go/firestore"
 )
 
-func newCode(prefix string) string {
-	var buf [3]byte
-	if _, err := rand.Read(buf[:]); err != nil {
-		return fmt.Sprintf("%s-%d", prefix, time.Now().UnixNano())
+func newNumericCode(prefix string, digits int) string {
+	max := new(big.Int).Exp(big.NewInt(10), big.NewInt(int64(digits)), nil)
+	n, err := rand.Int(rand.Reader, max)
+	if err != nil {
+		return fmt.Sprintf("%s - %s", prefix, time.Now().Format("150405"))
 	}
-	return fmt.Sprintf("%s-%s", prefix, hex.EncodeToString(buf[:]))
+	return fmt.Sprintf("%s - %0*d", prefix, digits, n.Int64())
 }
 
 func handleExportOrders(w http.ResponseWriter, r *http.Request) {
