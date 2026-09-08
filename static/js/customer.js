@@ -190,7 +190,7 @@ async function logoutCustomer() {
 }
 
 function updateAccountUI() {
-  const label = document.getElementById('account-label');
+  const label = document.getElementById('account-btn');
   const avatar = document.getElementById('account-avatar');
   if (authUser) {
     const name = authUser.displayName || authUser.email || 'Minha conta';
