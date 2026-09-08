@@ -1043,7 +1043,7 @@ body {
 
 .account-menu {
   position: absolute;
-  top: 60px;
+  top: 76px;
   right: 0;
   z-index: 60;
   min-width: 190px;
@@ -1304,13 +1304,13 @@ body {
 }
 
 .theme-btn {
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--card);
   color: var(--text);
-  font-size: 17px;
+  font-size: 15px;
   cursor: pointer;
   box-shadow: var(--shadow);
 }
@@ -1426,6 +1426,27 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.profile-id {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.account-name-link {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .account-avatar-btn {
