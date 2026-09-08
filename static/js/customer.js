@@ -525,7 +525,7 @@ function formatCents(cents) {
 // ---------- Init ----------
 
 document.addEventListener('click', (e) => {
-  if (!document.getElementById('account-menu').contains(e.target) && e.target.id !== 'account-btn') {
+  if (!e.target.closest('#account-menu') && !e.target.closest('#account-btn')) {
     closeAccountMenu();
   }
 });

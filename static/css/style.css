@@ -1373,6 +1373,13 @@ body {
   padding: 18px 0 14px;
 }
 
+.hero-sub {
+  text-align: center;
+  color: var(--text-light);
+  font-size: 13px;
+  margin: 0 0 18px;
+}
+
 .brand {
   display: flex;
   align-items: center;
