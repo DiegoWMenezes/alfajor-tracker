@@ -1,7 +1,10 @@
 ﻿let currentFilter = 'all';
 let currentClient = '';
 let isLoggedIn = false;
+let adminRole = '';
 let allOrders = [];
+let currentDateFilter = '';
+let selectedOrderIds = new Set();
 
 // --- Auth ---
 
@@ -21,6 +24,8 @@ async function login() {
     });
 
     if (res.ok) {
+      const session = await res.json();
+      adminRole = session.role || 'admin';
       isLoggedIn = true;
       showAdmin();
     } else {
@@ -38,6 +43,8 @@ async function login() {
 async function logout() {
   await fetch('/api/logout', { method: 'POST' });
   isLoggedIn = false;
+  adminRole = '';
+  document.body.classList.remove('payments-role');
   document.getElementById('login-screen').style.display = 'block';
   document.getElementById('admin-panel').style.display = 'none';
   document.getElementById('password').value = '';
@@ -46,14 +53,26 @@ async function logout() {
 }
 
 function showAdmin() {
+  const restricted = adminRole === 'payments';
+  document.body.classList.toggle('payments-role', restricted);
+  if (restricted) {
+    currentFilter = 'false';
+    currentClient = '';
+    selectedOrderIds.clear();
+    document.querySelectorAll('.filter-btn').forEach(button => {
+      button.classList.toggle('active', button.dataset.filter === 'false');
+    });
+  }
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('admin-panel').style.display = 'block';
-  loadSummary();
+  if (!restricted) loadSummary();
   loadOrders();
-  loadCategories();
-  loadProductsAdmin();
-  loadAnalytics();
-  checkDemoMode();
+  if (!restricted) {
+    loadCategories();
+    loadProductsAdmin();
+    loadAnalytics();
+    checkDemoMode();
+  }
   if (typeof hideLoading === 'function') hideLoading();
 }
 
@@ -88,40 +107,101 @@ async function loadOrders() {
   }
 }
 
-function populateClientFilter() {
-  const select = document.getElementById('client-filter');
-  const clients = [...new Set(allOrders.map(o => o.customer_name))].sort();
-  const current = select.value;
-  select.innerHTML = '<option value="">Todos os clientes</option>';
-  clients.forEach(name => {
-    const opt = document.createElement('option');
-    opt.value = name;
-    opt.textContent = name;
-    select.appendChild(opt);
-  });
-  select.value = current || '';
+function ordersForCurrentFilters() {
+  let orders = allOrders.slice();
+  if (currentFilter !== 'all') {
+    const paid = currentFilter === 'true';
+    orders = orders.filter(order => Boolean(order.paid) === paid);
+  }
+  if (currentDateFilter) {
+    orders = orders.filter(order => orderLocalDate(order) === currentDateFilter);
+  }
+  return orders;
 }
 
-function filterByClient(name) {
-  currentClient = name;
+function orderLocalDate(order) {
+  const date = new Date(order.created_at);
+  if (Number.isNaN(date.getTime())) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function isRegisteredOrder(order) {
+  return Boolean(String(order.customer_uid || '').trim());
+}
+
+function clientKey(order) {
+  const uid = String(order.customer_uid || '').trim();
+  if (uid) return `uid:${uid}`;
+  const email = String(order.customer_email || '').trim().toLowerCase();
+  if (email) return `email:${email}`;
+  return `name:${String(order.customer_name || '').trim().toLowerCase()}`;
+}
+
+function clientFilterLabel(order) {
+  const registered = isRegisteredOrder(order);
+  const email = String(order.customer_email || '').trim();
+  const account = registered
+    ? `Conta cadastrada${email ? ` · ${email}` : ''}`
+    : 'Sem cadastro';
+  return `${order.customer_name || 'Cliente sem nome'} — ${account}`;
+}
+
+function populateClientFilter() {
+  const select = document.getElementById('client-filter');
+  const clients = new Map();
+  ordersForCurrentFilters().forEach(order => {
+    const key = clientKey(order);
+    if (!clients.has(key)) clients.set(key, order);
+  });
+  if (currentClient && !clients.has(currentClient)) currentClient = '';
+
+  const allLabel = currentFilter === 'false'
+    ? 'Todos os clientes pendentes'
+    : currentFilter === 'true' ? 'Todos os clientes pagos' : 'Todos os clientes';
+  select.innerHTML = '';
+  const allOption = document.createElement('option');
+  allOption.value = '';
+  allOption.textContent = allLabel;
+  select.appendChild(allOption);
+
+  [...clients.entries()]
+    .sort((a, b) => clientFilterLabel(a[1]).localeCompare(clientFilterLabel(b[1]), 'pt-BR'))
+    .forEach(([key, order]) => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.textContent = clientFilterLabel(order);
+      select.appendChild(option);
+    });
+  select.value = currentClient || '';
+}
+
+function filterByClient(key) {
+  currentClient = key;
+  selectedOrderIds.clear();
+  renderFilteredOrders();
+}
+
+function filterByDate(value) {
+  currentDateFilter = value || '';
+  const input = document.getElementById('order-date-filter');
+  if (input) input.value = currentDateFilter;
+  selectedOrderIds.clear();
+  populateClientFilter();
   renderFilteredOrders();
 }
 
 function renderFilteredOrders() {
   const list = document.getElementById('orders-list');
-  let orders = allOrders.slice();
+  let orders = ordersForCurrentFilters();
+  if (currentClient) orders = orders.filter(order => clientKey(order) === currentClient);
 
-  if (currentFilter !== 'all') {
-    const paidVal = currentFilter === 'true';
-    orders = orders.filter(o => o.paid === paidVal);
-  }
-
-  if (currentClient) {
-    orders = orders.filter(o => o.customer_name === currentClient);
-  }
-
-  // Atualizar resumo do cliente
+  const pendingIds = new Set(allOrders.filter(order => !order.paid).map(order => order.id));
+  selectedOrderIds = new Set([...selectedOrderIds].filter(id => pendingIds.has(id)));
   updateClientSummary();
+  updateBulkPayToolbar();
 
   if (orders.length === 0) {
     list.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128203;</div><p>Nenhum pedido encontrado</p></div>';
@@ -129,35 +209,105 @@ function renderFilteredOrders() {
   }
 
   list.innerHTML = '';
-  orders.forEach(o => {
+  orders.forEach(order => {
     const card = document.createElement('div');
-    card.className = `order-card ${o.paid ? 'paid' : ''}`;
-    card.id = `order-${o.id}`;
+    card.className = `order-card ${order.paid ? 'paid' : ''}`;
+    card.id = `order-${order.id}`;
 
-    const itemsHtml = o.items.map(i =>`<span class="order-item-tag">${i.product_name} x${i.quantity} <span class="sorteio-code">ID ${i.code || '-'}</span><button class="item-remove-btn" onclick="removeItem('${o.id}', '${escapeAttr(i.product_name)}', '${escapeAttr(o.customer_name)}')">×</button></span>`
+    const itemsHtml = (order.items || []).map(item =>
+      `<span class="order-item-tag">${escapeHtml(item.product_name)} x${item.quantity} <span class="sorteio-code">ID ${escapeHtml(item.code || '-')}</span>${isPaymentsRole() ? '' : `<button class="item-remove-btn" onclick="removeItem('${escapeAttr(order.id)}', '${escapeAttr(item.product_name)}', '${escapeAttr(order.customer_name)}')">×</button>`}</span>`
     ).join('');
-
-    const time = new Date(o.created_at).toLocaleString('pt-BR');
+    const created = new Date(order.created_at);
+    const time = Number.isNaN(created.getTime()) ? '-' : created.toLocaleString('pt-BR');
+    const registered = isRegisteredOrder(order);
+    const accountBadge = registered
+      ? '<span class="account-status registered">Conta cadastrada</span>'
+      : '<span class="account-status unregistered">Sem cadastro</span>';
+    const accountEmail = registered && order.customer_email
+      ? `<span class="order-account-email">${escapeHtml(order.customer_email)}</span>`
+      : '';
+    const selectOrder = !order.paid
+      ? `<input class="order-select-checkbox" type="checkbox" data-order-id="${escapeHtml(order.id)}" aria-label="Selecionar pedido de ${escapeHtml(order.customer_name)}" ${selectedOrderIds.has(order.id) ? 'checked' : ''}>`
+      : '';
 
     card.innerHTML = `
       <div class="order-header">
-        <span class="order-name">${o.customer_name} <span class="sorteio-code">Pedido ${o.order_code || o.id || '-'}</span></span>
-        <span class="order-time">${time}</span>
+        <div class="order-name-group">
+          ${selectOrder}
+          ${accountBadge}
+          <span class="order-name">${escapeHtml(order.customer_name || 'Cliente sem nome')}</span>
+          ${accountEmail}
+          <span class="sorteio-code">Pedido ${escapeHtml(order.order_code || order.id || '-')}</span>
+        </div>
+        <span class="order-time">${escapeHtml(time)}</span>
       </div>
       <div class="order-items">${itemsHtml}</div>
       <div class="order-footer">
-        <span class="order-total">R$ ${formatCents(o.total_cents)}</span>
+        <span class="order-total">R$ ${formatCents(order.total_cents)}</span>
         <div class="order-actions">
-          ${o.paid
+          ${order.paid
             ? '<span class="badge badge-paid">Pago</span>'
-            : `<button class="btn btn-sm btn-success" onclick="markPaid('${o.id}')">Marcar Pago</button>`
+            : `<button class="btn btn-sm btn-success" onclick="markPaid('${escapeAttr(order.id)}')">Marcar Pago</button>`
           }
-          <button class="btn btn-sm btn-danger-outline" onclick="deleteOrder('${o.id}', '${escapeAttr(o.customer_name)}')">Excluir</button>
+          ${isPaymentsRole() ? '' : `<button class="btn btn-sm btn-danger-outline" onclick="deleteOrder('${escapeAttr(order.id)}', '${escapeAttr(order.customer_name)}')">Excluir</button>`}
         </div>
       </div>
     `;
     list.appendChild(card);
   });
+
+  list.querySelectorAll('.order-select-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', () => toggleOrderSelection(checkbox.dataset.orderId, checkbox.checked));
+  });
+}
+
+function toggleOrderSelection(id, checked) {
+  const order = allOrders.find(candidate => candidate.id === id);
+  if (!order || order.paid) return;
+  if (checked) selectedOrderIds.add(id);
+  else selectedOrderIds.delete(id);
+  updateBulkPayToolbar();
+}
+
+function updateBulkPayToolbar() {
+  const toolbar = document.getElementById('bulk-pay-toolbar');
+  if (!toolbar) return;
+  const count = selectedOrderIds.size;
+  toolbar.hidden = count === 0;
+  document.getElementById('selected-orders-count').textContent =
+    count === 1 ? '1 pedido selecionado' : `${count} pedidos selecionados`;
+  document.getElementById('bulk-pay-button').disabled = count === 0;
+}
+
+function clearOrderSelection() {
+  selectedOrderIds.clear();
+  renderFilteredOrders();
+}
+
+async function markSelectedPaid() {
+  const ids = [...selectedOrderIds].filter(id => allOrders.some(order => order.id === id && !order.paid));
+  if (ids.length === 0) return;
+  if (!confirm(`Marcar ${ids.length} ${ids.length === 1 ? 'pedido como pago' : 'pedidos como pagos'}?`)) return;
+
+  const button = document.getElementById('bulk-pay-button');
+  button.disabled = true;
+  button.textContent = 'Salvando...';
+  try {
+    const response = await fetch('/api/orders/pay-selected', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids })
+    });
+    if (!response.ok) throw new Error(await response.text());
+    selectedOrderIds.clear();
+    await loadOrders();
+    if (!isPaymentsRole()) loadSummary();
+  } catch (error) {
+    alert('Erro ao marcar os pedidos como pagos. Nenhum pedido foi alterado.');
+  } finally {
+    button.textContent = 'Marcar selecionados como pagos';
+    updateBulkPayToolbar();
+  }
 }
 
 function updateClientSummary() {
@@ -166,11 +316,15 @@ function updateClientSummary() {
     summaryEl.style.display = 'none';
     return;
   }
-  const clientOrders = allOrders.filter(o => o.customer_name === currentClient);
-  const pendingCents = clientOrders.filter(o => !o.paid).reduce((s, o) => s + o.total_cents, 0);
-  const paidCents = clientOrders.filter(o => o.paid).reduce((s, o) => s + o.total_cents, 0);
+  const clientOrders = allOrders.filter(order => clientKey(order) === currentClient);
+  if (clientOrders.length === 0) {
+    summaryEl.style.display = 'none';
+    return;
+  }
+  const pendingCents = clientOrders.filter(order => !order.paid).reduce((sum, order) => sum + order.total_cents, 0);
+  const paidCents = clientOrders.filter(order => order.paid).reduce((sum, order) => sum + order.total_cents, 0);
 
-  document.getElementById('client-summary-name').textContent = currentClient;
+  document.getElementById('client-summary-name').textContent = clientFilterLabel(clientOrders[0]);
   document.getElementById('client-summary-pending').textContent = `R$ ${formatCents(pendingCents)}`;
   document.getElementById('client-summary-paid').textContent = `R$ ${formatCents(paidCents)}`;
   summaryEl.style.display = 'block';
@@ -181,7 +335,7 @@ async function markPaid(id) {
     const res = await fetch(`/api/orders/${id}/pay`, { method: 'PATCH' });
     if (res.ok) {
       await loadOrders();
-      loadSummary();
+      if (!isPaymentsRole()) loadSummary();
     }
   } catch (e) {
     alert('Erro ao marcar como pago');
@@ -223,10 +377,13 @@ async function removeItem(orderId, productName, customerName) {
 }
 
 function filterOrders(filter) {
+  if (isPaymentsRole() && filter !== 'false') return;
+  if (currentFilter !== filter) selectedOrderIds.clear();
   currentFilter = filter;
-  document.querySelectorAll('.filter-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.filter === filter);
+  document.querySelectorAll('.filter-btn').forEach(button => {
+    button.classList.toggle('active', button.dataset.filter === filter);
   });
+  populateClientFilter();
   renderFilteredOrders();
 }
 
@@ -405,6 +562,7 @@ async function deleteProduct(id) {
 // --- Tabs ---
 
 function switchTab(tab) {
+  if (isPaymentsRole() && tab !== 'orders') return;
   document.querySelectorAll('.tab').forEach(t => {
     t.classList.toggle('active', t.dataset.tab === tab);
   });
@@ -432,12 +590,23 @@ function formatCents(cents) {
   return (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 }
 
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[character]);
+}
+
 function escapeAttr(str) {
   return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
 }
 
 function exportOrders() {
+  if (isPaymentsRole()) return;
   window.location.href = '/api/export/orders';
+}
+
+function isPaymentsRole() {
+  return adminRole === 'payments';
 }
 
 // --- Analytics ---
@@ -647,8 +816,10 @@ document.getElementById('password').addEventListener('keypress', e => {
 });
 
 // Checa se ja tem sessao ativa
-fetch('/api/summary').then(res => {
+fetch('/api/admin/session').then(async res => {
   if (res.ok) {
+    const session = await res.json();
+    adminRole = session.role || 'admin';
     isLoggedIn = true;
     showAdmin();
   } else {

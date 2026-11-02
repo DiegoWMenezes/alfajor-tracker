@@ -51,6 +51,10 @@ type OrderRequest struct {
 	Items        []OrderItem `json:"items"`
 }
 
+type MarkPaidBulkRequest struct {
+	IDs []string `json:"ids"`
+}
+
 type Summary struct {
 	TotalOrders       int `json:"total_orders"`
 	TotalSoldCents    int `json:"total_sold_cents"`

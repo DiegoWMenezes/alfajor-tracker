@@ -485,7 +485,50 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
   margin-bottom: 8px;
+}
+
+.order-name-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.account-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.account-status.registered {
+  color: #176b36;
+  background: #e3f6e9;
+}
+
+.account-status.unregistered {
+  color: #805b16;
+  background: #fff2d2;
+}
+
+.order-account-email {
+  color: var(--text-light);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.order-select-checkbox {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--success);
+  cursor: pointer;
 }
 
 .order-name {
@@ -934,7 +977,74 @@ body {
 
 /* Client filter */
 .client-filter-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 240px) auto;
+  align-items: end;
+  gap: 10px;
   margin-bottom: 12px;
+}
+
+.order-date-filter {
+  display: grid;
+  gap: 5px;
+  color: var(--text-light);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.order-date-filter input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+}
+
+.order-date-filter input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-light);
+}
+
+.bulk-pay-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.bulk-pay-toolbar[hidden] {
+  display: none;
+}
+
+.bulk-pay-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .client-filter-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .order-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .bulk-pay-actions {
+    width: 100%;
+  }
 }
 
 .client-filter-bar select {
@@ -1554,4 +1664,9 @@ body {
   .hero-sub {
     font-size: 12px;
   }
+}
+body.payments-role [data-admin-only],
+body.payments-role #client-summary,
+body.payments-role #demo-warning {
+  display: none !important;
 }

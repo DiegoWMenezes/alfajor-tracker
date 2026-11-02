@@ -44,6 +44,16 @@ FIREBASE_APP_ID=
 
 O backend expoe esses valores publicos em `GET /api/firebase-config`.
 
+### Perfil de baixas
+
+Para criar um acesso restrito ao painel, gere um hash bcrypt para a senha
+separada usando `go run cmd/hashpw/main.go <senha>` e configure-o como
+`PAYMENTS_PASSWORD_HASH` no ambiente do servidor (por exemplo, em Render).
+Esse perfil pode consultar somente pedidos pendentes e marcá-los como pagos,
+inclusive em lote. As rotas de produtos, analytics, exclusão, edição de itens e
+exportação continuam exclusivas do perfil admin. Deixe a variável vazia para
+desativar o acesso restrito.
+
 ## Teste local
 
 ```powershell

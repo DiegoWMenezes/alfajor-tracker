@@ -152,6 +152,60 @@ func (m *MemStore) MarkPaid(id string) bool {
 	return false
 }
 
+func (m *MemStore) MarkPendingPaid(id string) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for i, order := range m.orders {
+		if order.ID == id {
+			if order.Paid {
+				return false
+			}
+			m.orders[i].Paid = true
+			return true
+		}
+	}
+	return false
+}
+
+func (m *MemStore) MarkPaidMany(ids []string) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	indexes := make(map[string]int, len(m.orders))
+	for i, order := range m.orders {
+		indexes[order.ID] = i
+	}
+	for _, id := range ids {
+		if _, ok := indexes[id]; !ok {
+			return false
+		}
+	}
+	for _, id := range ids {
+		m.orders[indexes[id]].Paid = true
+	}
+	return true
+}
+
+func (m *MemStore) MarkPendingPaidMany(ids []string) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	indexes := make(map[string]int, len(m.orders))
+	for i, order := range m.orders {
+		indexes[order.ID] = i
+	}
+	for _, id := range ids {
+		i, ok := indexes[id]
+		if !ok || m.orders[i].Paid {
+			return false
+		}
+	}
+	for _, id := range ids {
+		m.orders[indexes[id]].Paid = true
+	}
+	return true
+}
+
 func (m *MemStore) DeleteOrder(id string) bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()

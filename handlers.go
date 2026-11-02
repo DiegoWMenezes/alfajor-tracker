@@ -1,15 +1,20 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/firestore"
 )
+
+var errOrderAlreadyPaid = errors.New("pedido ja pago")
 
 // --- Auth ---
 
@@ -20,12 +25,13 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !checkAdminPassword(req.Password) {
+	role := roleForPassword(req.Password)
+	if role == "" {
 		http.Error(w, "Senha incorreta", http.StatusUnauthorized)
 		return
 	}
 
-	token, err := createSessionToken("admin", "", "")
+	token, err := createSessionToken(role, "", "")
 	if err != nil {
 		http.Error(w, "Erro ao criar sessao", http.StatusInternalServerError)
 		return
@@ -41,7 +47,17 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	})
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	json.NewEncoder(w).Encode(map[string]string{"status": "ok", "role": role})
+}
+
+func handleAdminSession(w http.ResponseWriter, r *http.Request) {
+	claims, ok := validateSession(r)
+	if !ok {
+		http.Error(w, "Nao autorizado", http.StatusUnauthorized)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"role": claims.Role})
 }
 
 func handleLogout(w http.ResponseWriter, r *http.Request) {
@@ -330,6 +346,9 @@ func handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 func handleGetOrders(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	filterPaid := r.URL.Query().Get("paid")
+	if claims, ok := validateSession(r); ok && claims.Role == "payments" {
+		filterPaid = "false"
+	}
 
 	if fsClient == nil {
 		json.NewEncoder(w).Encode(memStore.GetOrders(filterPaid))
@@ -371,16 +390,45 @@ func handleMarkPaid(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	claims, _ := validateSession(r)
 	if fsClient == nil {
-		memStore.MarkPaid(id)
+		if claims.Role == "payments" && !memStore.MarkPendingPaid(id) {
+			http.Error(w, "Pedido nao encontrado ou ja pago", http.StatusConflict)
+			return
+		}
+		if claims.Role == "admin" {
+			memStore.MarkPaid(id)
+		}
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 		return
 	}
 
-	_, err := fsClient.Collection("orders").Doc(id).Update(ctx, []firestore.Update{
-		{Path: "Paid", Value: true},
-	})
+	var err error
+	if claims.Role == "payments" {
+		err = fsClient.RunTransaction(r.Context(), func(txCtx context.Context, tx *firestore.Transaction) error {
+			doc, getErr := tx.Get(fsClient.Collection("orders").Doc(id))
+			if getErr != nil {
+				return getErr
+			}
+			var order Order
+			if getErr = doc.DataTo(&order); getErr != nil {
+				return getErr
+			}
+			if order.Paid {
+				return errOrderAlreadyPaid
+			}
+			return tx.Update(doc.Ref, []firestore.Update{{Path: "Paid", Value: true}})
+		})
+		if errors.Is(err, errOrderAlreadyPaid) {
+			http.Error(w, "Pedido ja pago", http.StatusConflict)
+			return
+		}
+	} else {
+		_, err = fsClient.Collection("orders").Doc(id).Update(ctx, []firestore.Update{
+			{Path: "Paid", Value: true},
+		})
+	}
 	if err != nil {
 		http.Error(w, "Erro ao atualizar pedido", http.StatusInternalServerError)
 		return
@@ -388,6 +436,95 @@ func handleMarkPaid(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+
+func handleMarkPaidBulk(w http.ResponseWriter, r *http.Request) {
+	var req MarkPaidBulkRequest
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64*1024)).Decode(&req); err != nil {
+		http.Error(w, "Lista de pedidos invalida", http.StatusBadRequest)
+		return
+	}
+	if len(req.IDs) == 0 || len(req.IDs) > 500 {
+		http.Error(w, "Selecione entre 1 e 500 pedidos", http.StatusBadRequest)
+		return
+	}
+
+	ids := make([]string, 0, len(req.IDs))
+	seen := make(map[string]struct{}, len(req.IDs))
+	for _, id := range req.IDs {
+		id = strings.TrimSpace(id)
+		if id == "" || strings.Contains(id, "/") {
+			http.Error(w, "ID de pedido invalido", http.StatusBadRequest)
+			return
+		}
+		if _, exists := seen[id]; exists {
+			continue
+		}
+		seen[id] = struct{}{}
+		ids = append(ids, id)
+	}
+	claims, _ := validateSession(r)
+
+	if fsClient == nil {
+		var ok bool
+		if claims.Role == "payments" {
+			ok = memStore.MarkPendingPaidMany(ids)
+		} else {
+			ok = memStore.MarkPaidMany(ids)
+		}
+		if !ok {
+			if claims.Role == "payments" {
+				http.Error(w, "Um ou mais pedidos nao existem ou ja foram pagos", http.StatusConflict)
+			} else {
+				http.Error(w, "Um ou mais pedidos nao foram encontrados", http.StatusNotFound)
+			}
+			return
+		}
+	} else {
+		var err error
+		if claims.Role == "payments" {
+			err = fsClient.RunTransaction(r.Context(), func(txCtx context.Context, tx *firestore.Transaction) error {
+				refs := make([]*firestore.DocumentRef, 0, len(ids))
+				for _, id := range ids {
+					doc, getErr := tx.Get(fsClient.Collection("orders").Doc(id))
+					if getErr != nil {
+						return getErr
+					}
+					var order Order
+					if getErr = doc.DataTo(&order); getErr != nil {
+						return getErr
+					}
+					if order.Paid {
+						return errOrderAlreadyPaid
+					}
+					refs = append(refs, doc.Ref)
+				}
+				for _, ref := range refs {
+					if updateErr := tx.Update(ref, []firestore.Update{{Path: "Paid", Value: true}}); updateErr != nil {
+						return updateErr
+					}
+				}
+				return nil
+			})
+		} else {
+			batch := fsClient.Batch()
+			for _, id := range ids {
+				batch.Update(fsClient.Collection("orders").Doc(id), []firestore.Update{{Path: "Paid", Value: true}})
+			}
+			_, err = batch.Commit(r.Context())
+		}
+		if errors.Is(err, errOrderAlreadyPaid) {
+			http.Error(w, "Um ou mais pedidos ja foram pagos", http.StatusConflict)
+			return
+		}
+		if err != nil {
+			http.Error(w, "Erro ao atualizar pedidos", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{"status": "ok", "updated": len(ids)})
 }
 
 func handleDeleteOrder(w http.ResponseWriter, r *http.Request) {

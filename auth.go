@@ -22,14 +22,21 @@ func init() {
 	sessionSecret = secret
 }
 
-func checkAdminPassword(password string) bool {
-	hash := os.Getenv("ADMIN_PASSWORD_HASH")
-	if hash == "" {
+func roleForPassword(password string) string {
+	adminHash := os.Getenv("ADMIN_PASSWORD_HASH")
+	if adminHash == "" {
 		// Modo demo: senha padrao "admin"
 		defaultHash, _ := hashPassword("admin")
-		hash = defaultHash
+		adminHash = defaultHash
 	}
-	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
+	if bcrypt.CompareHashAndPassword([]byte(adminHash), []byte(password)) == nil {
+		return "admin"
+	}
+	paymentsHash := os.Getenv("PAYMENTS_PASSWORD_HASH")
+	if paymentsHash != "" && bcrypt.CompareHashAndPassword([]byte(paymentsHash), []byte(password)) == nil {
+		return "payments"
+	}
+	return ""
 }
 
 func hashPassword(password string) (string, error) {
@@ -76,7 +83,7 @@ func validateSession(r *http.Request) (*sessionClaims, bool) {
 		return nil, false
 	}
 
-	return claims, claims.Role == "admin"
+	return claims, claims.Role == "admin" || claims.Role == "payments"
 }
 
 func validateCustomerSession(r *http.Request) (*sessionClaims, bool) {
@@ -101,6 +108,17 @@ func validateCustomerSession(r *http.Request) (*sessionClaims, bool) {
 }
 
 func requireAuth(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		claims, ok := validateSession(r)
+		if !ok || claims.Role != "admin" {
+			http.Error(w, "Nao autorizado", http.StatusUnauthorized)
+			return
+		}
+		next(w, r)
+	}
+}
+
+func requireOrdersAccess(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if _, ok := validateSession(r); !ok {
 			http.Error(w, "Nao autorizado", http.StatusUnauthorized)

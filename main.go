@@ -51,6 +51,7 @@ func main() {
 	// Auth
 	mux.HandleFunc("POST /api/login", handleLogin)
 	mux.HandleFunc("POST /api/logout", handleLogout)
+	mux.HandleFunc("GET /api/admin/session", requireOrdersAccess(handleAdminSession))
 	mux.HandleFunc("POST /api/auth/session", handleFirebaseSession)
 	mux.HandleFunc("POST /api/auth/logout", handleCustomerLogout)
 	mux.HandleFunc("GET /api/me", handleMe)
@@ -68,9 +69,10 @@ func main() {
 
 	// Orders
 	mux.HandleFunc("POST /api/orders", handleCreateOrder)
-	mux.HandleFunc("GET /api/orders", requireAuth(handleGetOrders))
+	mux.HandleFunc("GET /api/orders", requireOrdersAccess(handleGetOrders))
 	mux.HandleFunc("GET /api/orders/{id}/pix", handleGetPix)
-	mux.HandleFunc("PATCH /api/orders/{id}/pay", requireAuth(handleMarkPaid))
+	mux.HandleFunc("PATCH /api/orders/{id}/pay", requireOrdersAccess(handleMarkPaid))
+	mux.HandleFunc("PATCH /api/orders/pay-selected", requireOrdersAccess(handleMarkPaidBulk))
 	mux.HandleFunc("DELETE /api/orders/{id}", requireAuth(handleDeleteOrder))
 	mux.HandleFunc("PATCH /api/orders/{id}/items", requireAuth(handleRemoveOrderItem))
 

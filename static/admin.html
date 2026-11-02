@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Alfajor - Admin</title>
-  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/style.css?v=20261102-1">
   <link rel="icon" href="/static/img/logo.png">
 </head>
 <body>
@@ -42,13 +42,13 @@
       <div class="admin-header">
         <h2>Alfajor</h2>
         <div class="admin-header-actions">
-          <button class="btn btn-sm btn-outline" onclick="exportOrders()">Exportar CSV</button>
+          <button class="btn btn-sm btn-outline" data-admin-only onclick="exportOrders()">Exportar CSV</button>
           <button class="btn btn-sm btn-outline" onclick="logout()">Sair</button>
         </div>
       </div>
 
       <!-- Stats -->
-      <div class="stats" id="stats">
+      <div class="stats" id="stats" data-admin-only>
         <div class="stat-card">
           <div class="stat-value" id="stat-total">-</div>
           <div class="stat-label">Pedidos</div>
@@ -70,21 +70,33 @@
       <!-- Tabs -->
       <div class="tabs">
         <button class="tab active" data-tab="orders" onclick="switchTab('orders')">Pedidos</button>
-        <button class="tab" data-tab="products" onclick="switchTab('products')">Sabores</button>
-        <button class="tab" data-tab="analytics" onclick="switchTab('analytics')">Analytics</button>
+        <button class="tab" data-tab="products" data-admin-only onclick="switchTab('products')">Sabores</button>
+        <button class="tab" data-tab="analytics" data-admin-only onclick="switchTab('analytics')">Analytics</button>
       </div>
 
       <!-- Pedidos -->
       <div id="tab-orders" class="tab-content active">
         <div class="filter-bar">
-          <button class="filter-btn active" data-filter="all" onclick="filterOrders('all')">Todos</button>
+          <button class="filter-btn active" data-filter="all" data-admin-only onclick="filterOrders('all')">Todos</button>
           <button class="filter-btn" data-filter="false" onclick="filterOrders('false')">Pendentes</button>
-          <button class="filter-btn" data-filter="true" onclick="filterOrders('true')">Pagos</button>
+          <button class="filter-btn" data-filter="true" data-admin-only onclick="filterOrders('true')">Pagos</button>
         </div>
         <div class="client-filter-bar">
           <select id="client-filter" onchange="filterByClient(this.value)">
             <option value="">Todos os clientes</option>
           </select>
+          <label class="order-date-filter" for="order-date-filter">
+            <span>Data do pedido</span>
+            <input id="order-date-filter" type="date" onchange="filterByDate(this.value)">
+          </label>
+          <button class="btn btn-sm btn-outline" type="button" onclick="filterByDate('')">Todas as datas</button>
+        </div>
+        <div id="bulk-pay-toolbar" class="bulk-pay-toolbar" hidden aria-live="polite">
+          <strong id="selected-orders-count">0 pedidos selecionados</strong>
+          <div class="bulk-pay-actions">
+            <button id="bulk-pay-button" class="btn btn-sm btn-success" type="button" onclick="markSelectedPaid()">Marcar selecionados como pagos</button>
+            <button class="btn btn-sm btn-outline" type="button" onclick="clearOrderSelection()">Limpar seleção</button>
+          </div>
         </div>
         <div id="orders-list"></div>
         <div id="client-summary" class="client-summary-card" style="display:none">
@@ -182,7 +194,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-  <script src="/static/js/admin.js"></script>
+  <script src="/static/js/admin.js?v=20261102-1"></script>
   <script>
     function hideLoading() {
       var loading = document.getElementById('loading-screen');
